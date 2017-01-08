@@ -1,5 +1,5 @@
 function newtonraphson(f_,h_!,x; ρ = 0.5, c = 1e-4, tol = 1e-4)
-    grad= ones(length(x))
+    grad= fill(Inf,length(x))
     hes= ones(length(x),length(x))
     y = 1.
     while norm(grad) > tol
@@ -15,7 +15,7 @@ function newtonraphson(f_,h_!,x; ρ = 0.5, c = 1e-4, tol = 1e-4)
     return x, y, grad, hes
 end
 
-function newtonraphson(f_, x; ρ = 0.5, c = 1e-4, tol = 1e-12)
+function newtonraphson(f_, x; ρ = 0.5, c = 1e-4, tol = 1e-4)
     h_! = function(x,grad,hes)
         ForwardDiff.gradient!(grad,f_,x)
         ForwardDiff.hessian!(hes,f_,x)

@@ -32,6 +32,7 @@ function cox_f(times, censored, f, l, ξ , X, β, λ) # preprocessed already
             y -= Xβ[j] -log(ϕ)
         end
     end
+    y += λ*dot(β',β)
     return y
 end
 
@@ -52,24 +53,30 @@ function cox_h!(grad,hes, times, censored, f, l, ξ , X, β, λ)
     y = 0.
     grad[:] = 0.
     hes[:] = 0.
+
+    # preallocate
+    Z = zeros(size(X,2))
+    Ξ = zeros(size(X,2),size(X,2))
+
     #compute loglikelihood, score, fischer_info
     for i in 1:length(f)
         for j in (f[i]):(l[i])
             ρ = (alive[j]-alive[f[i]])/(alive[f[i]]-alive[l[i]+1])
             ϕ = afterΘ[f[i]]-ρ*(afterΘ[f[i]]-afterΘ[l[i]+1])
-            Z = afterXΘ[f[i],:]-ρ*(afterXΘ[f[i],:]-afterXΘ[l[i]+1,:])
-            Ξ = afterξΘ[f[i],:,:]-ρ*(afterξΘ[f[i],:,:]-afterξΘ[l[i]+1,:,:])
+            Z[:] = afterXΘ[f[i],:]-ρ*(afterXΘ[f[i],:]-afterXΘ[l[i]+1,:])
+            Ξ[:,:] = afterξΘ[f[i],:,:]-ρ*(afterξΘ[f[i],:,:]-afterξΘ[l[i]+1,:,:])
             y -= Xβ[j] -log(ϕ)
-            grad[:] = grad - X[j,:]+Z/ϕ
-            hes[:] = hes + Ξ/ϕ - Z*Z'/ϕ^2
+            grad[:] += - X[j,:]+Z/ϕ
+            hes[:, :] += Ξ/ϕ - Z*Z'/ϕ^2
         end
     end
-    grad[:] = grad + λ
-    hes[:] = hes + λ*eye(size(X,2))
+    y += λ*dot(β',β)
+    grad[:] +=  2*λ*β
+    hes[:,:] +=  2*λ*eye(size(X,2))
     return y
 end
 
-function coxph(S::AbstractVector,X::AbstractArray; penalized = 0.)
+function coxph(S::AbstractVector,X::AbstractArray; l2_cost = 0., kwargs...)
     times = [a.time for a in S]
     censored = [a.censored for a in S]
     ξ = zeros(size(X,1),size(X,2),size(X,2))
@@ -85,19 +92,25 @@ function coxph(S::AbstractVector,X::AbstractArray; penalized = 0.)
     l = find(lasts)
     # do optimization
 
-    f1 = (β) -> cox_f(times, censored, f, l, ξ , X, β, penalized)
-    h1! = (β,grad,hes) -> cox_h!(grad,hes,times, censored, f, l, ξ , X, β, penalized)
-    return newtonraphson(f1,h1!, zeros(size(X,2)))
+    f1 = (β) -> cox_f(times, censored, f, l, ξ , X, β, l2_cost)
+    h1! = (β,grad,hes) -> cox_h!(grad,hes,times, censored, f, l, ξ , X, β, l2_cost)
+    return newtonraphson(f1,h1!, zeros(size(X,2)); kwargs...)
 end
 
-function coxph(formula::Formula, data::DataFrame)
+function coxph(formula::Formula, data::DataFrame; l2_cost = 0., kwargs...)
     sorted_data = deepcopy(data)
     sort!(sorted_data, cols = formula.lhs)
     M = DataFrames.ModelFrame(formula,sorted_data)
-    S = M.df[:,1]
-    X = DataFrames.ModelMatrix(M)
-    X = X.m[:,collect(2:size(X.m,2))]
-    return coxph(S, X)
+    S = collect(M.df[:,1])
+    model_matrix = DataFrames.ModelMatrix(M)
+    X = model_matrix.m[:,2:size(model_matrix.m,2)]
+    β, neg_ll,grad, hes =  coxph(S, X; l2_cost = l2_cost, kwargs...)
+    colnames = coefnames(M)[2:end]
+    se = sqrt.(diag(pinv(hes)))
+    z_score = β./se
+    pvalues = 2*cdf(Normal(),-abs.(z_score))
+    return CoefTable(hcat([β, se, z_score, pvalues]...),
+    ["Estimate", "S.E.", "z-score", "P-value"], colnames, 4)
 end
 
 # function phreg(formula::Formula, data::DataFrame; id=[], opt...)
