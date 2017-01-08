@@ -19,17 +19,19 @@ function interpolate(x,v,pts::LinSpace)
     value = v[I1]*(1.-rem)+v[I1+1]*rem
     return value
 end
-# careful! eff_times could go to 0!!!
-function get_likelihood(times, cs, X, T, β)
-    #eff_times = max.(times.*exp(-X*β),1e-3)
-    eff_times = times.*exp(-X*β)
-    ll = sum(log.(pdf(Gamma(T,1.),eff_times[!cs])))+ # NOOOOO!!!!! vedi notebook!!!!!
-        sum(log.(1-cdf(Gamma(T,1.),eff_times[cs])))
+# careful! eff_t0 could go to 0!!!
+function get_likelihood(t0, cs,t1, X, T, β)
+    #eff_t0 = max.(times.*exp(-X*β),1e-3)
+    Xβ = X*β
+    eff_t0 = t0.*exp(-Xβ)
+    eff_t1 = t1.*exp(-Xβ)
+    ll = sum(log.(pdf(Gamma(T,1.),eff_t0[cs]))-Xβ)+
+        sum(log.(cdf(Gamma(T,1.),eff_t1[cs])-cdf(Gamma(T,1.),eff_t1[cs])))
     # get gradient and hessian
     # bin x axis (to compute gradient and hessian for cdf)
     ϵ = 1e-4
     nbins = 500
-    disc_axis = linspace(0,quantile(Gamma(T,1.),1.-ϵ),nbins)
+    disc_axis = linspace(0.,quantile(Gamma(T,1.),1.-ϵ),nbins)
     gammas = pdf(Gamma(T,1), disc_axis)
     # compute first two derivatives of 1-cdf as fct of threshold
     dsurvdT = surv(dlgammadT.(T,disc_axis).*gammas,disc_axis)
@@ -37,13 +39,44 @@ function get_likelihood(times, cs, X, T, β)
     # initialize gradient and hessian
     grad = zeros(1,1+size(X,2))
     hes = zeros(1+size(X,2),1+size(X,2))
-    for i in 1:length(eff_times)
-        addgrad!(grad, T, eff_times[i],cs[i], X[i:i,:],dsurvdT,disc_axis)
-        addhes!(hes, T, eff_times[i], cs[i], X[i:i,:],dsurvdT,dsurvdT2,disc_axis)
+    for i in 1:length(eff_t0)
+        addgrad!(grad, T, eff_t0[i],cs[i], X[i:i,:],dsurvdT,disc_axis)
+        addhes!(hes, T, eff_t0[i], cs[i], X[i:i,:],dsurvdT,dsurvdT2,disc_axis)
     end
     return -ll, -grad, -hes
 end
 
+#= Given by the user!!!
+l(p,t)
+grad_small(p,t)
+hes_small(p,t)
+
+Step 1) Get:
+ll(p,t)
+ll(p,t1,t2)
+grad_small(p,t1,t2)
+hes_small(p,t1,t2)
+
+
+[T,t] = g(T, β...)
+
+@
+grad_big = grad()
+
+#= First STEP:
+Go from dP(T,t) to
+=#
+
+# Second Step: get hes_big, grad_big
+
+grad_big(T, t1, t2) = hes_()
+
+
+
+
+
+
+#=
 dlgammadT(T,x) = (x<= 0. ? 0. : log(x))-polygamma(0,T)
 dlgammadT2(T,x) = -polygamma(1,T)
 

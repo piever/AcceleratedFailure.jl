@@ -1,18 +1,3 @@
-type Buffer
-    value::Float64
-    gradient::Array{Float64,1}
-    hessian::Array{Float64,2}
-end
-
-Buffer(N) = Buffer(0.,zeros(N), zeros(N,N))
-
-function set_tozero!(b::Buffer)
-    b.value = 0.
-    b.gradient[:] = 0.
-    b.hessian[:] = 0.
-    return
-end
-
 function after{N,T}(v::AbstractArray{T,N})
     cv = cumsum(v,1)
     newsize = collect(size(cv))
@@ -30,9 +15,33 @@ function after{N,T}(v::AbstractArray{T,N})
     return afterv
 end
 
-function common_computation!(buffer, times, censored, f, l, ξ , X, β, λ) # preprocessed already
+function cox_f(times, censored, f, l, ξ , X, β, λ) # preprocessed already
     #compute relevant quantities for loglikelihood, score, fischer_info
     ## trick= usa scale invariance e semplifica tutto!!!
+    Xβ = X*β
+    Θ = exp.(Xβ)
+    afterΘ = after(Θ)
+    alive = after(ones(Int64, length(times)))
+
+    y = 0.
+    #compute loglikelihood, score, fischer_info
+    for i in 1:length(f)
+        for j in (f[i]):(l[i])
+            ρ = (alive[j]-alive[f[i]])/(alive[f[i]]-alive[l[i]+1])
+            ϕ = afterΘ[f[i]]-ρ*(afterΘ[f[i]]-afterΘ[l[i]+1])
+            y -= Xβ[j] -log(ϕ)
+        end
+    end
+    return y
+end
+
+# preprocessed already:
+# f = index first deaths, l = index last deaths,
+# X is covariates, ξ is covariate covariate transpose
+function cox_h!(grad,hes, times, censored, f, l, ξ , X, β, λ)
+    #compute relevant quantities for loglikelihood, score, fischer_info
+    ## trick= usa scale invariance e semplifica tutto!!!
+
     Xβ = X*β
     Θ = exp.(Xβ)
     afterΘ = after(Θ)
@@ -40,22 +49,24 @@ function common_computation!(buffer, times, censored, f, l, ξ , X, β, λ) # pr
     afterXΘ = after(X.*Θ)
     afterξΘ = after(ξ.*Θ)
 
+    y = 0.
+    grad[:] = 0.
+    hes[:] = 0.
     #compute loglikelihood, score, fischer_info
-    set_tozero!(buffer)
     for i in 1:length(f)
         for j in (f[i]):(l[i])
             ρ = (alive[j]-alive[f[i]])/(alive[f[i]]-alive[l[i]+1])
             ϕ = afterΘ[f[i]]-ρ*(afterΘ[f[i]]-afterΘ[l[i]+1])
             Z = afterXΘ[f[i],:]-ρ*(afterXΘ[f[i],:]-afterXΘ[l[i]+1,:])
             Ξ = afterξΘ[f[i],:,:]-ρ*(afterξΘ[f[i],:,:]-afterξΘ[l[i]+1,:,:])
-            buffer.value -= Xβ[j] -log(ϕ)
-            buffer.gradient -= X[j,:]-Z/ϕ
-            buffer.hessian += Ξ/ϕ - Z*Z'/ϕ^2
+            y -= Xβ[j] -log(ϕ)
+            grad[:] = grad - X[j,:]+Z/ϕ
+            hes[:] = hes + Ξ/ϕ - Z*Z'/ϕ^2
         end
     end
-    buffer.score += λ
-    buffer.hessian += λ*eye(size(X,2)
-    return
+    grad[:] = grad + λ
+    hes[:] = hes + λ*eye(size(X,2))
+    return y
 end
 
 function coxph(S::AbstractVector,X::AbstractArray; penalized = 0.)
@@ -67,11 +78,22 @@ function coxph(S::AbstractVector,X::AbstractArray; penalized = 0.)
     end
 
     # compute first and last!
+    firsts = !censored & [t==1 || S[t] > S[t-1] for t = 1:length(S)]
+    lasts = !censored & [t==length(S) || S[t+1] > S[t] for t = 1:length(S)]
+
+    f = find(firsts)
+    l = find(lasts)
+    # do optimization
+
+    f1 = (β) -> cox_f(times, censored, f, l, ξ , X, β, penalized)
+    h1! = (β,grad,hes) -> cox_h!(grad,hes,times, censored, f, l, ξ , X, β, penalized)
+    return newtonraphson(f1,h1!, zeros(size(X,2)))
 end
 
 function coxph(formula::Formula, data::DataFrame)
-
-    M = DataFrames.ModelFrame(formula,data)
+    sorted_data = deepcopy(data)
+    sort!(sorted_data, cols = formula.lhs)
+    M = DataFrames.ModelFrame(formula,sorted_data)
     S = M.df[:,1]
     X = DataFrames.ModelMatrix(M)
     X = X.m[:,collect(2:size(X.m,2))]
