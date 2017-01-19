@@ -11,6 +11,11 @@ end
 
 Base.isless(a::Event, b::Event) = isless((a.time, a.censored), (b.time,b.censored))
 
+# Compute first and last! Could be optimized!
+firsts{R}(S::Vector{Event{R}}) = [!S[t].censored && (t==1 || S[t] > S[t-1]) for t = 1:length(S)]
+lasts{R}(S::Vector{Event{R}}) = [!S[t].censored && (t==length(S) || S[t+1] > S[t]) for t = 1:length(S)]
+
+
 type xyfunc{T<:Real}
     x::Vector{T}
     y::Vector{T}

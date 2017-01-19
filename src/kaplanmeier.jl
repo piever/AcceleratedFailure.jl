@@ -24,11 +24,6 @@ function kaplan_meier(tdist1 :: Distributions.Distribution, tdist2 :: Distributi
 end
 
 
-
-# Compute first and last! Could be optimized!
-firsts{R}(S::Vector{Event{R}}) = [!S[t].censored && (t==1 || S[t] > S[t-1]) for t = 1:length(S)]
-lasts{R}(S::Vector{Event{R}}) = [!S[t].censored && (t==length(S) || S[t+1] > S[t]) for t = 1:length(S)]
-
 #f = find(firsts)
 #l = find(lasts)
 
