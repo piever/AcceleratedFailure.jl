@@ -15,7 +15,7 @@ function after{N,T}(v::AbstractArray{T,N})
     return afterv
 end
 
-function cox_f(times, censored, f, l, ξ , X, β, λ) # preprocessed already
+function cox_f(times, censored, fs, ls, ξ , X, β, λ) # preprocessed already
     #compute relevant quantities for loglikelihood, score, fischer_info
     ## trick= usa scale invariance e semplifica tutto!!!
     Xβ = X*β
@@ -25,10 +25,10 @@ function cox_f(times, censored, f, l, ξ , X, β, λ) # preprocessed already
 
     y = 0.
     #compute loglikelihood, score, fischer_info
-    for i in 1:length(f)
-        for j in (f[i]):(l[i])
-            ρ = (alive[j]-alive[f[i]])/(alive[f[i]]-alive[l[i]+1])
-            ϕ = afterΘ[f[i]]-ρ*(afterΘ[f[i]]-afterΘ[l[i]+1])
+    for i in 1:length(fs)
+        for j in (fs[i]):(ls[i])
+            ρ = (alive[j]-alive[fs[i]])/(alive[fs[i]]-alive[ls[i]+1])
+            ϕ = afterΘ[fs[i]]-ρ*(afterΘ[fs[i]]-afterΘ[ls[i]+1])
             y -= Xβ[j] -log(ϕ)
         end
     end
@@ -39,7 +39,7 @@ end
 # preprocessed already:
 # f = index first deaths, l = index last deaths,
 # X is covariates, ξ is covariate covariate transpose
-function cox_h!(grad,hes, times, censored, f, l, ξ , X, β, λ)
+function cox_h!(grad,hes, times, censored, fs, ls, ξ , X, β, λ)
     #compute relevant quantities for loglikelihood, score, fischer_info
     ## trick= usa scale invariance e semplifica tutto!!!
 
@@ -59,12 +59,12 @@ function cox_h!(grad,hes, times, censored, f, l, ξ , X, β, λ)
     Ξ = zeros(size(X,2),size(X,2))
 
     #compute loglikelihood, score, fischer_info
-    for i in 1:length(f)
-        for j in (f[i]):(l[i])
-            ρ = (alive[j]-alive[f[i]])/(alive[f[i]]-alive[l[i]+1])
-            ϕ = afterΘ[f[i]]-ρ*(afterΘ[f[i]]-afterΘ[l[i]+1])
-            Z[:] = afterXΘ[f[i],:]-ρ*(afterXΘ[f[i],:]-afterXΘ[l[i]+1,:])
-            Ξ[:,:] = afterξΘ[f[i],:,:]-ρ*(afterξΘ[f[i],:,:]-afterξΘ[l[i]+1,:,:])
+    for i in 1:length(fs)
+        for j in (fs[i]):(ls[i])
+            ρ = (alive[j]-alive[fs[i]])/(alive[fs[i]]-alive[ls[i]+1])
+            ϕ = afterΘ[fs[i]]-ρ*(afterΘ[fs[i]]-afterΘ[ls[i]+1])
+            Z[:] = afterXΘ[fs[i],:]-ρ*(afterXΘ[fs[i],:]-afterXΘ[ls[i]+1,:])
+            Ξ[:,:] = afterξΘ[fs[i],:,:]-ρ*(afterξΘ[fs[i],:,:]-afterξΘ[ls[i]+1,:,:])
             y -= Xβ[j] -log(ϕ)
             grad[:] += - X[j,:]+Z/ϕ
             hes[:, :] += Ξ/ϕ - Z*Z'/ϕ^2
@@ -110,7 +110,7 @@ function coxph(formula::Formula, data::DataFrame; l2_cost = 0., kwargs...)
     z_score = β./se
     pvalues = 2*cdf(Normal(),-abs.(z_score))
     return CoefTable(hcat([β, se, z_score, pvalues]...),
-    ["Estimate", "S.E.", "z-score", "P-value"], colnames, 4)
+    ["Estimate", "Std.Error", "z value", "Pr(>|z|)"], colnames, 4)
 end
 
 # function phreg(formula::Formula, data::DataFrame; id=[], opt...)

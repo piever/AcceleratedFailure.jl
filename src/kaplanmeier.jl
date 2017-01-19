@@ -1,31 +1,50 @@
-function add_prob!(km)
-    km[:surv] = zeros(size(km,1))
-    surv = 1.
-    for i in 1:size(km,1)
-        surv *= (1-km[i,:death_tot]/km[i,:alive])
-        km[i,:surv] = surv
-    end
-    km[:prob] = -diff(vcat(1.,km[:surv]))
-    return
+function kaplan_meier{R}(events::AbstractVector{Event{R}}, fs, ls)
+    n = length(events)
+    ds = ls-fs+1
+    ns = length(events)- fs +1
+    surv = cumprod(1.-ds./ns)
+    return xyfunc(getfield.(events[fs],[:time]), 1.-surv)
 end
 
-function kaplan_meier{S<:Real}(times::AbstractArray{S,1}, censored::AbstractArray{Bool,1})
-    dd = extra_info(times, censored)
-    km = dd[dd[:death_num].== 1, :]
-    add_prob!(km)
-    return km
+
+function kaplan_meier{R}(events::AbstractVector{Event{R}}, sorted::Bool = false)
+    sorted ? kaplan_meier(events, find(firsts(events)), find(lasts(events))) :
+             kaplan_meier(sort(events),true)
 end
 
-function kaplan_meier{S<:Real, T<:Real}(dist1::AbstractArray{S,1},dist2::AbstractArray{T,1})
-    event = min.(dist1,dist2)
+function kaplan_meier{S<:Real, T<:Real}(dist1::AbstractVector{S},dist2::AbstractVector{T})
+    times = min.(dist1,dist2)
     censored = (dist1 .> dist2)
-    return kaplan_meier(event,censored)
+    return kaplan_meier(Event.(times,censored))
 end
 
 function kaplan_meier(tdist1 :: Distributions.Distribution, tdist2 :: Distributions.Distribution, n :: Int64)
     dist1,dist2 = rand.([tdist1,tdist2],[n])
     return kaplan_meier(dist1,dist2)
 end
+
+
+
+# Compute first and last! Could be optimized!
+firsts{R}(S::Vector{Event{R}}) = [!S[t].censored && (t==1 || S[t] > S[t-1]) for t = 1:length(S)]
+lasts{R}(S::Vector{Event{R}}) = [!S[t].censored && (t==length(S) || S[t+1] > S[t]) for t = 1:length(S)]
+
+#f = find(firsts)
+#l = find(lasts)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
