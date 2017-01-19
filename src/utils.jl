@@ -1,3 +1,30 @@
+type EventHistoryModel
+    model::AbstractString
+    formula::Formula
+    #eventtype::DataType
+    #coef::Vector{Float64}
+    coefmat::CoefTable
+    M::ModelFrame
+    #IC::Matrix{Float64}
+    #invhess::Matrix{Float64}
+    #vcov::Matrix{Float64}
+    #opt::Vector
+    #grad::Vector{Float64}
+    #X::Matrix{Float64}
+    #eventtime::Matrix
+    #chaz::Matrix{Float64}
+end
+
+# coefnames !!!
+
+function show(io::IO, obj::EventHistoryModel)
+    print(io,"\nModel: ", obj.model, "; ", obj.formula,"\n")
+    #n = size(obj.eventtime,1)
+    #events::Int = sum(obj.eventtime[:,2])
+    #print(io,"\nn=",n,", events=",events,"\n\n")
+    print(io,obj.coefmat)
+end
+
 immutable Event{T<:Real}
     time::T
     censored::Bool
@@ -12,14 +39,41 @@ end
 Base.isless(a::Event, b::Event) = isless((a.time, a.censored), (b.time,b.censored))
 
 # Compute first and last! Could be optimized!
-firsts{R}(S::Vector{Event{R}}) = [!S[t].censored && (t==1 || S[t] > S[t-1]) for t = 1:length(S)]
-lasts{R}(S::Vector{Event{R}}) = [!S[t].censored && (t==length(S) || S[t+1] > S[t]) for t = 1:length(S)]
+firsts(S) = [!S[t].censored && (t==1 || S[t] > S[t-1]) for t = 1:length(S)]
+lasts(S) = [!S[t].censored && (t==length(S) || S[t+1] > S[t]) for t = 1:length(S)]
 
 
-type xyfunc{T<:Real}
-    x::Vector{T}
+type xyfunc{S<:Real, T<:Real}
+    x::Vector{S}
     y::Vector{T}
 end
+
+# Preallocate??
+function after{N,T}(v::AbstractArray{T,N})
+    cv = cumsum(v,1)
+    newsize = collect(size(cv))
+    newsize[1] += 1
+    afterv = zeros(eltype(cv),newsize...)
+    if N==1
+        afterv[1:end-1] = cv[end] - cv + v
+    elseif N==2
+        afterv[1:end-1,:] = (cv[end:end,:] .- cv) + v
+    elseif N==3
+        afterv[1:end-1,:,:] = (cv[end:end,:,:] .- cv) + v
+    else
+        error("$v can be at most 3-dimensional!")
+    end
+    return afterv
+end
+
+
+
+
+
+
+
+
+
 
 #Altra funzione importante somme parziali!
 # Avanti e indietro per somme parziali!!!!

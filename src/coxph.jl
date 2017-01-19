@@ -1,21 +1,3 @@
-# Preallocate??
-function after{N,T}(v::AbstractArray{T,N})
-    cv = cumsum(v,1)
-    newsize = collect(size(cv))
-    newsize[1] += 1
-    afterv = zeros(eltype(cv),newsize...)
-    if N==1
-        afterv[1:end-1] = cv[end] - cv + v
-    elseif N==2
-        afterv[1:end-1,:] = (cv[end:end,:] .- cv) + v
-    elseif N==3
-        afterv[1:end-1,:,:] = (cv[end:end,:,:] .- cv) + v
-    else
-        error("$v can be at most 3-dimensional!")
-    end
-    return afterv
-end
-
 function cox_f(S, fs, ls, ξ , X, β, λ) # preprocessed already
     #compute relevant quantities for loglikelihood, score, fischer_info
     ## trick= usa scale invariance e semplifica tutto!!!
@@ -95,8 +77,8 @@ function coxph(S::AbstractVector,X::AbstractArray; l2_cost = 0., kwargs...)
 end
 
 function coxph(formula::Formula, data::DataFrame; l2_cost = 0., kwargs...)
-    sorted_data = deepcopy(data)
-    sort!(sorted_data, cols = formula.lhs)
+    sorted_data = sort(data, cols = formula.lhs)
+    #sort!(sorted_data, cols = formula.lhs)
     M = DataFrames.ModelFrame(formula,sorted_data)
     S = collect(M.df[:,1])
     model_matrix = DataFrames.ModelMatrix(M)
@@ -106,8 +88,9 @@ function coxph(formula::Formula, data::DataFrame; l2_cost = 0., kwargs...)
     se = sqrt.(diag(pinv(hes)))
     z_score = β./se
     pvalues = 2*cdf(Normal(),-abs.(z_score))
-    return CoefTable(hcat([β, se, z_score, pvalues]...),
+    coefmat = CoefTable(hcat([β, se, z_score, pvalues]...),
     ["Estimate", "Std.Error", "z value", "Pr(>|z|)"], colnames, 4)
+    EventHistoryModel("Cox", formula, coefmat, M)
 end
 
 # function phreg(formula::Formula, data::DataFrame; id=[], opt...)
