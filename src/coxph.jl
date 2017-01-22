@@ -20,7 +20,7 @@ function cox_f(S, fs, ls, ξ , X, β, λ) # preprocessed already
 end
 
 # preprocessed already:
-# f = index first deaths, l = index last deaths,
+# fs = index first deaths, ls = index last deaths,
 # X is covariates, ξ is covariate covariate transpose
 function cox_h!(grad,hes, S, fs, ls, ξ , X, β, λ)
     #compute relevant quantities for loglikelihood, score, fischer_info

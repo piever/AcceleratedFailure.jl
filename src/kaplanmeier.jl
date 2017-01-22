@@ -5,52 +5,7 @@ function kaplan_meier(events, fs, ls)
     return xyfunc(getfield.(events[fs],[:time]), 1.-surv)
 end
 
-
 function kaplan_meier(events, sorted::Bool = false)
     sorted ? kaplan_meier(events, find(firsts(events)), find(lasts(events))) :
              kaplan_meier(sort(events),true)
 end
-
-function kaplan_meier{S<:Real, T<:Real}(dist1::AbstractVector{S},dist2::AbstractVector{T})
-    times = min.(dist1,dist2)
-    censored = (dist1 .> dist2)
-    return kaplan_meier(Event.(times,censored))
-end
-
-function kaplan_meier(tdist1 :: Distributions.Distribution, tdist2 :: Distributions.Distribution, n :: Int64)
-    dist1,dist2 = rand.([tdist1,tdist2],[n])
-    return kaplan_meier(dist1,dist2)
-end
-
-
-#f = find(firsts)
-#l = find(lasts)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# get_mean(km; event_time = :event_time) = (km[event_time]' *km[:prob])[1]
-# get_std(km; event_time = :event_time) = sqrt(((km[event_time].^2)' * km[:prob])[1]-
-# get_mean(km; event_time = event_time)^2)
-# function get_both(km; event_time = :event_time)
-#     media = get_mean(km; event_time = :event_time)
-#     standard = sqrt(((km[event_time].^2)' * km[:prob])[1]-media^2)
-#     return media, standard
-# end
-# function get_ratio(args...;kwargs...)
-#     m, σ = get_both(args...;kwargs...)
-#     return σ/m
-# end
