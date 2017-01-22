@@ -2,7 +2,6 @@ module Survival
 using DataFrames
 using GLM
 using Optim
-using TensorOperations
 using PositiveFactorizations
 using Distributions
 import ForwardDiff
