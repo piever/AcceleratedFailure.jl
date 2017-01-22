@@ -29,12 +29,6 @@ Base.isless(a::Event, b::Event) = isless((a.time, a.censored), (b.time,b.censore
 firsts(S) = [!S[t].censored && (t==1 || S[t] > S[t-1]) for t = 1:length(S)]
 lasts(S) = [!S[t].censored && (t==length(S) || S[t+1] > S[t]) for t = 1:length(S)]
 
-
-type xyfunc{S<:Real, T<:Real}
-    x::Vector{S}
-    y::Vector{T}
-end
-
 # Preallocate??
 function after{N,T}(v::AbstractArray{T,N})
     cv = cumsum(v,1)

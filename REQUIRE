@@ -1,1 +1,10 @@
 julia 0.5
+
+DataFrames
+GLM
+TensorOperations
+PositiveFactorizations
+Distributions
+Optim
+ForwardDiff
+StatsBase

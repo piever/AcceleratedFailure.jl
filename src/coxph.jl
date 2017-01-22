@@ -80,7 +80,7 @@ function coxph(formula::Formula, data::DataFrame; l2_cost = 0., kwargs...)
     sorted_data = sort(data, cols = formula.lhs)
     #sort!(sorted_data, cols = formula.lhs)
     M = DataFrames.ModelFrame(formula,sorted_data)
-    S = collect(M.df[:,1])
+    S = convert(Array, M.df[:,1])
     model_matrix = DataFrames.ModelMatrix(M)
     X = model_matrix.m[:,2:size(model_matrix.m,2)]
     β, neg_ll,grad, hes =  coxph(S, X; l2_cost = l2_cost, kwargs...)
