@@ -73,7 +73,7 @@ function coxph(S::AbstractVector,X::AbstractArray; l2_cost = 0., kwargs...)
 
     f1 = (β) -> cox_f(S, fs, ls, ξ , X, β, l2_cost)
     h1! = (β,grad,hes) -> cox_h!(grad,hes, S, fs, ls, ξ , X, β, l2_cost)
-    return newtonraphson(f1,h1!, zeros(size(X,2)); kwargs...)
+    return newton_raphson(f1,h1!, zeros(size(X,2)); kwargs...)
 end
 
 function coxph(formula::Formula, data::DataFrame; l2_cost = 0., kwargs...)
@@ -90,22 +90,5 @@ function coxph(formula::Formula, data::DataFrame; l2_cost = 0., kwargs...)
     pvalues = 2*cdf(Normal(),-abs.(z_score))
     coefmat = CoefTable(hcat([β, se, z_score, pvalues]...),
     ["Estimate", "Std.Error", "z value", "Pr(>|z|)"], colnames, 4)
-    EventHistoryModel("Cox", formula, coefmat, M)
+    EventHistoryModel("Cox", formula, coefmat, M, -neg_ll, hes)
 end
-
-# function phreg(formula::Formula, data::DataFrame; id=[], opt...)
-#     ## fm = DataFrames.Formula(formula.args[2],formula.args[3])
-#     M = DataFrames.ModelFrame(formula,data)
-#     S = M.df[:,1] ## convert(Vector,M.df[:,1])
-#     time = EventHistory.Time(S)
-#     status = EventHistory.Status(S)
-#     entry = try EventHistory.Entry(S) catch [] end
-#     X = DataFrames.ModelMatrix(M)
-#     X = X.m[:,collect(2:size(X.m,2))]
-#     res = EventHistory.phreg(X, time, status, entry; opt...)
-#     cnames = setdiff(coefnames(M),["(Intercept)"])
-#     res.coefmat.rownms=cnames
-#     res.formula = formula
-#     res.eventtype = typeof(S[1])
-#     res
-# end

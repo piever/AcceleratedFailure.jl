@@ -3,6 +3,8 @@ type EventHistoryModel
     formula::Formula
     coefmat::CoefTable
     M::ModelFrame
+    loglik::Float64
+    fischer_info::Array{Float64,2}
 end
 
 # coefnames !!!

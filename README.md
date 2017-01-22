@@ -6,6 +6,13 @@
 
 [![codecov.io](http://codecov.io/github/piever/Survival.jl/coverage.svg?branch=master)](http://codecov.io/github/piever/Survival.jl?branch=master)
 
+## Setting up
+To install the package, simply run
+```julia
+Pkg.clone("https://github.com/piever/Survival.jl.git")
+```
+in the Julia REPL.
+
 ## Basic usage:
 Load relevant packages:
 
