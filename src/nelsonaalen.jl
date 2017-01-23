@@ -34,8 +34,9 @@ function chaz2haz(x,y,bw; npoints = 1000)
         ycont[index[i]:index[i+1]] = yext[i]
     end
     dist = Normal(0.,bw)
-    smoother = pdf(dist, quantile(dist,0.001):step(pts):quantile(dist,0.999));
-    ysmooth = conv(ycont,smoother)[div(length(smoother),2):length(pts)]
+    smoother = pdf(dist, quantile(dist,0.001):step(pts):quantile(dist,0.999))
+    append!(ycont,fill(y[end],div(length(smoother),2)+1))
+    ysmooth = conv(ycont,smoother)[div(length(smoother),2):(length(pts)+div(length(smoother),2))]
     smoothaz = diff(ysmooth)
-    return pts[1:(end-div(length(smoother),2))], smoothaz
+    return pts, smoothaz
 end
