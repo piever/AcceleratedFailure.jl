@@ -1,10 +1,9 @@
-function cox_f(S, fs, ls, ξ , X, β, λ) # preprocessed already
+function cox_f(S, fs, ls, ξ , X, β, λ, alive, afterΘ) # preprocessed already
     #compute relevant quantities for loglikelihood, score, fischer_info
     ## trick= usa scale invariance e semplifica tutto!!!
     Xβ = X*β
     Θ = exp.(Xβ)
-    afterΘ = after(Θ)
-    alive = after(ones(Int64, length(S)))
+    after!(afterΘ, Θ)
 
     y = 0.
     #compute loglikelihood, score, fischer_info
@@ -22,16 +21,15 @@ end
 # preprocessed already:
 # fs = index first deaths, ls = index last deaths,
 # X is covariates, ξ is covariate covariate transpose
-function cox_h!(grad,hes, S, fs, ls, ξ , X, β, λ)
+function cox_h!(grad,hes, S, fs, ls, ξ , X, β, λ, alive, afterΘ, afterXΘ, afterξΘ)
     #compute relevant quantities for loglikelihood, score, fischer_info
     ## trick= usa scale invariance e semplifica tutto!!!
 
     Xβ = X*β
     Θ = exp.(Xβ)
-    afterΘ = after(Θ)
-    alive = after(ones(Int64, length(S)))
-    afterXΘ = after(X.*Θ)
-    afterξΘ = after(ξ.*Θ)
+    after!(afterΘ,Θ)
+    after!(afterXΘ, X.*Θ)
+    after!(afterξΘ,ξ.*Θ)
 
     y = 0.
     grad[:] = 0.
@@ -71,8 +69,13 @@ function coxph(S::AbstractVector,X::AbstractArray; l2_cost = 0., kwargs...)
     ls = find(lasts(S))
     # do optimization
 
-    f1 = (β) -> cox_f(S, fs, ls, ξ , X, β, l2_cost)
-    h1! = (β,grad,hes) -> cox_h!(grad,hes, S, fs, ls, ξ , X, β, l2_cost)
+    alive = after(ones(Int64, length(S)))
+    afterΘ = init_after(zeros(size(X,1)))
+    afterXΘ = init_after(X.*zeros(size(X,1)))
+    afterξΘ = init_after(ξ.*zeros(size(X,1)))
+
+    f1 = (β) -> cox_f(S, fs, ls, ξ , X, β, l2_cost, alive, afterΘ)
+    h1! = (β,grad,hes) -> cox_h!(grad,hes, S, fs, ls, ξ , X, β, l2_cost,alive, afterΘ, afterXΘ, afterξΘ)
     return newton_raphson(f1,h1!, zeros(size(X,2)); kwargs...)
 end
 
