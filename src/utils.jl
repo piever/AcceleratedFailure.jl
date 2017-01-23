@@ -32,6 +32,7 @@ firsts(S) = [!S[t].censored && (t==1 || S[t] > S[t-1]) for t = 1:length(S)]
 lasts(S) = [!S[t].censored && (t==length(S) || S[t+1] > S[t]) for t = 1:length(S)]
 
 
+# Computes "complementary cumulative sum" on first dimension
 function after(v)
     afterv = init_after(v)
     after!(afterv,v)

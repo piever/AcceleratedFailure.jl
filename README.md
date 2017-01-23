@@ -25,7 +25,7 @@ using CSV
 Load dataset and create event column. Event.time is time, whereas Event.censored is true if the data is censored and false otherwise.
 
 ```julia
-filepath = joinpath(Pkg.dir("Survival", "test"), "rossi.csv")
+filepath = joinpath(Pkg.dir("Survival", "examples"), "rossi.csv")
 rossi = CSV.read(filepath)
 rossi[:event] = Survival.Event.(convert(Array, rossi[:week]),convert(Array,rossi[:arrest]) .== 0)
 ```

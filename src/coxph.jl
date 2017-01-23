@@ -23,7 +23,6 @@ end
 # X is covariates, ξ is covariate covariate transpose
 function cox_h!(grad,hes, S, fs, ls, ξ , X, β, λ, alive, afterΘ, afterXΘ, afterξΘ)
     #compute relevant quantities for loglikelihood, score, fischer_info
-    ## trick= usa scale invariance e semplifica tutto!!!
 
     Xβ = X*β
     Θ = exp.(Xβ)
@@ -40,12 +39,19 @@ function cox_h!(grad,hes, S, fs, ls, ξ , X, β, λ, alive, afterΘ, afterXΘ, a
     Ξ = zeros(size(X,2),size(X,2))
 
     #compute loglikelihood, score, fischer_info
+    #From v0.6 remember to use . notation and do it inplace, possibly using views!
     for i in 1:length(fs)
         for j in (fs[i]):(ls[i])
             ρ = (alive[j]-alive[fs[i]])/(alive[fs[i]]-alive[ls[i]+1])
             ϕ = afterΘ[fs[i]]-ρ*(afterΘ[fs[i]]-afterΘ[ls[i]+1])
-            Z[:] = afterXΘ[fs[i],:]-ρ*(afterXΘ[fs[i],:]-afterXΘ[ls[i]+1,:])
-            Ξ[:,:] = afterξΘ[fs[i],:,:]-ρ*(afterξΘ[fs[i],:,:]-afterξΘ[ls[i]+1,:,:])
+            for k in eachindex(Z)
+                Z[k] = afterXΘ[fs[i],k]-ρ*(afterXΘ[fs[i],k]-afterXΘ[ls[i]+1,k])
+            end
+            for k2 in 1:size(Ξ,2)
+                for k1 in 1:size(Ξ,1)
+                    Ξ[k1,k2] = afterξΘ[fs[i],k1,k2]-ρ*(afterξΘ[fs[i],k1,k2]-afterξΘ[ls[i]+1,k1,k2])
+                end
+            end
             y -= Xβ[j] -log(ϕ)
             grad[:] += - X[j,:]+Z/ϕ
             hes[:, :] += Ξ/ϕ - Z*Z'/ϕ^2
