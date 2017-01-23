@@ -4,6 +4,7 @@ type EventHistoryModel
     coefmat::CoefTable
     M::ModelFrame
     loglik::Float64
+    score::Array{Float64,1}
     fischer_info::Array{Float64,2}
 end
 

@@ -19,5 +19,7 @@ export EventHistoryModel
 export coxph
 export nelson_aalen
 export kaplan_meier
+export chaz2cdf
+export chaz2haz
 
 end

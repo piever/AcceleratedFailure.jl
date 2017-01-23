@@ -17,7 +17,7 @@ in the Julia REPL.
 Load relevant packages:
 
 ```julia
-import Survival
+using Survival
 using DataFrames
 using CSV
 ```
@@ -27,12 +27,12 @@ Load dataset and create event column. Event.time is time, whereas Event.censored
 ```julia
 filepath = joinpath(Pkg.dir("Survival", "examples"), "rossi.csv")
 rossi = CSV.read(filepath)
-rossi[:event] = Survival.Event.(convert(Array, rossi[:week]),convert(Array,rossi[:arrest]) .== 0)
+rossi[:event] = Event.(convert(Array, rossi[:week]),convert(Array,rossi[:arrest]) .== 0)
 ```
 
 Run Cox regression
 ```julia
-outcome = Survival.coxph(event ~ fin+age+race+wexp+mar+paro+prio,rossi)
+outcome = coxph(event ~ fin+age+race+wexp+mar+paro+prio,rossi)
 ```
 And you should get this outcome (computed with Efron method for ties):
 ```
@@ -51,7 +51,7 @@ prio   0.0907363 0.0286157   3.17086   0.0015
 This package also includes Kaplan Meier estimator of the cumulative function, which takes a vector of events as input:
 
 ```julia
-x,cumulative = Survival.kaplan_meier(convert(Array,rossi[:event]))
+x,cumulative = kaplan_meier(convert(Array,rossi[:event]))
 ```
 In the output `x` will be the array with the times of death, `cumulative` the estimated cdf.
 
@@ -65,7 +65,7 @@ plot(x,cumulative, line = :step)
 Nelson Aalen estimator for the cumulative hazard:
 
 ```julia
-x, chaz = Survival.nelson_aalen(convert(Array,rossi[:event]))
+x, chaz = nelson_aalen(convert(Array,rossi[:event]))
 ```
 
 To check that everything went well, you may want to verify that `cumulative = 1 - exp.(-chaz)`
@@ -78,11 +78,24 @@ plot!(x,1-exp.(-chaz), line = :step)
 You can also get the baseline cumulative hazard from the outcome of a Cox regression:
 
 ```julia
-Survival.nelson_aalen(outcome)
+x, chaz = nelson_aalen(outcome)
+```
+In turn, it's always possible to get the cdf from the cumulative hazard:
+
+```julia
+chaz2cdf(x,chaz)
 ```
 
+and the same is true for the hazard:
+
+```julia
+chaz2haz(x,chaz)
+chaz2haz(x,chaz, bw)
+
+```
+
+where, in the second case, `bw` is a parameter used for smoothing.
+
 ## To do list:
-- Speeding up Cox with preallocation
-- Giving a more extensive output in Cox regression
-- Documentation + tests
-- Accelerated failure time models!
+- Documentation + tests + examples
+- Accelerated failure time models
