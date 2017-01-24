@@ -1,28 +1,46 @@
+#Recommended use of the example: run step by step in Juno
+
 using Survival
 using DataFrames
 using CSV
 using BenchmarkTools
 using Plots
-Plots.plotlyjs(bottom_margin = 5mm, grid = false)
-plot(rand(100))
-gui()
+gr()
 
+# Load DataFrame and create "event" column
 filepath = joinpath(Pkg.dir("Survival", "examples"), "rossi.csv")
 rossi = CSV.read(filepath);
 rossi[:event] = Event.(convert(Array, rossi[:week]),convert(Array,rossi[:arrest]) .== 0)
 
+# kaplan_meier and nelson_aalen method to estimate cdf and cumulative hazard respectively
+plot(kaplan_meier(convert(Array,rossi[:event]))..., line = :step)
+
+plot(nelson_aalen(convert(Array,rossi[:event])), line = :step)
+
+# Run Cox regression
 outcome = coxph(event ~ fin+age+race+wexp+mar+paro+prio,rossi)
 
-kaplan_meier(convert(Array,rossi[:event]))
+# Test efficiency of the implementation:
+using BenchmarkTools
+@benchmark outcome = coxph(event ~ fin+age+race+wexp+mar+paro+prio,rossi)
 
-s = Plots.plot(kaplan_meier(convert(Array,rossi[:event]))..., line = :step, label = "kaplan meier")
-x,y = nelson_aalen(convert(Array,rossi[:event]))
-Plots.plot!(chaz2cdf(x,y)..., line = :step, label = "via nelson aalen")
-gui()
+# The outcome of the regression is stored in outcome.coefmat
+outcome.coefmat
 
+#Other relevant quantities are stored in outcome as well:
+outcome.loglik #log-likelihood of the fitted parameters (for model comparison)
+outcome.score # gradient of log-likelihood: should be close to 0 (safety check)
+outcome.fischer_info #fischer information matrix
+
+eigvals(outcome.fischer_info) # Safety check: these eigen-values must be positive
+
+# Get baseline cumulative hazard from Cox regression
 x,chaz = nelson_aalen(outcome)
 
+# Use cumulative hazard to get hazard (bw is smoothing parameter)
 bw = 0.5
-Plots.plot(chaz2haz(x,chaz,bw)...)
-Plots.plot!(chaz2haz(x,chaz)...)
-gui()
+plot(chaz2haz(x,chaz,bw)...)
+plot!(chaz2haz(x,chaz)...)
+
+# Use cumulative hazard to get cdf
+plot(chaz2cdf(x,chaz), line = :step)

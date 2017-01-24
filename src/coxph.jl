@@ -1,12 +1,10 @@
 function cox_f(S, fs, ls, ξ , X, β, λ, alive, afterΘ) # preprocessed already
-    #compute relevant quantities for loglikelihood, score, fischer_info
-    ## trick= usa scale invariance e semplifica tutto!!!
     Xβ = X*β
     Θ = exp.(Xβ)
     after!(afterΘ, Θ)
 
+    #compute loglikelihood
     y = 0.
-    #compute loglikelihood, score, fischer_info
     for i in 1:length(fs)
         for j in (fs[i]):(ls[i])
             ρ = (alive[j]-alive[fs[i]])/(alive[fs[i]]-alive[ls[i]+1])
@@ -30,6 +28,8 @@ function cox_h!(grad,hes, S, fs, ls, ξ , X, β, λ, alive, afterΘ, afterXΘ, a
     after!(afterXΘ, X.*Θ)
     after!(afterξΘ,ξ.*Θ)
 
+    #compute loglikelihood, score, fischer_info
+    #From v0.6 remember to use . notation and do it inplace, possibly using views!
     y = 0.
     grad[:] = 0.
     hes[:] = 0.
@@ -38,8 +38,6 @@ function cox_h!(grad,hes, S, fs, ls, ξ , X, β, λ, alive, afterΘ, afterXΘ, a
     Z = zeros(size(X,2))
     Ξ = zeros(size(X,2),size(X,2))
 
-    #compute loglikelihood, score, fischer_info
-    #From v0.6 remember to use . notation and do it inplace, possibly using views!
     for i in 1:length(fs)
         for j in (fs[i]):(ls[i])
             ρ = (alive[j]-alive[fs[i]])/(alive[fs[i]]-alive[ls[i]+1])
@@ -73,6 +71,7 @@ function coxph(S::AbstractVector,X::AbstractArray; l2_cost = 0., kwargs...)
 
     fs = find(firsts(S))
     ls = find(lasts(S))
+
     # do optimization
 
     alive = after(ones(Int64, length(S)))
@@ -87,7 +86,6 @@ end
 
 function coxph(formula::Formula, data::DataFrame; l2_cost = 0., kwargs...)
     sorted_data = sort(data, cols = formula.lhs)
-    #sort!(sorted_data, cols = formula.lhs)
     M = DataFrames.ModelFrame(formula,sorted_data)
     S = convert(Array, M.df[:,1])
     model_matrix = DataFrames.ModelMatrix(M)

@@ -26,6 +26,14 @@ function Base.show(io::IO, obj::Event)
     print(io, obj.time, obj.censored ? "+":"")
 end
 
+function Base.parse(T::Type{Event},str::String)
+    if str[end] == '+'
+        return Event(parse(str[1:(end-1)]), true)
+    else
+        return Event(parse(str), false)
+    end
+end
+
 Base.isless(a::Event, b::Event) = isless((a.time, a.censored), (b.time,b.censored))
 
 # Compute first and last! Could be optimized!
