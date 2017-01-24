@@ -1,11 +1,11 @@
-function nelson_aalen(events, fs, ls, Θ = ones(length(events)))
+function nelson_aalen(events::Array, fs, ls, Θ = ones(length(events)))
     ds = ls-fs+1
     ns = after(Θ)[fs]
     chaz = cumsum(ds./ns)
     return getfield.(events[fs],[:time]), chaz
 end
 
-function nelson_aalen(events, Θ = ones(length(events)))
+function nelson_aalen(events::Array, Θ = ones(length(events)))
     if issorted(events)
         return nelson_aalen(events, find(firsts(events)), find(lasts(events)),Θ)
     else
@@ -15,6 +15,9 @@ function nelson_aalen(events, Θ = ones(length(events)))
         return nelson_aalen(sorted_events, find(firsts(sorted_events)), find(lasts(sorted_events)), sorted_Θ)
     end
 end
+
+nelson_aalen(events::NullableArray, args...) = nelson_aalen(events.values[!events.isnull], args...)
+nelson_aalen(events::AbstractArray, args...) = nelson_aalen(convert(Array,events), args...)
 
 function nelson_aalen(res::EventHistoryModel)
     nelson_aalen(convert(Array,res.M.df[:,1]),

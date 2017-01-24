@@ -26,8 +26,8 @@ Load dataset and create event column. Event.time is time, whereas Event.censored
 
 ```julia
 filepath = joinpath(Pkg.dir("Survival", "examples"), "rossi.csv")
-rossi = CSV.read(filepath)
-rossi[:event] = Event.(convert(Array, rossi[:week]),convert(Array,rossi[:arrest]) .== 0)
+rossi = CSV.read(filepath; nullable = false)
+rossi[:event] = Event.(rossi[:week],rossi[:arrest]) .== 0)
 ```
 
 Run Cox regression
@@ -51,7 +51,7 @@ prio   0.0907363 0.0286157   3.17086   0.0015
 This package also includes Kaplan Meier estimator of the cumulative function, which takes a vector of events as input:
 
 ```julia
-x,cumulative = kaplan_meier(convert(Array,rossi[:event]))
+x,cumulative = kaplan_meier(rossi[:event])
 ```
 In the output `x` will be the array with the times of death, `cumulative` the estimated cdf.
 
@@ -65,7 +65,7 @@ plot(x,cumulative, line = :step)
 Nelson Aalen estimator for the cumulative hazard:
 
 ```julia
-x, chaz = nelson_aalen(convert(Array,rossi[:event]))
+x, chaz = nelson_aalen(rossi[:event])
 ```
 
 To check that everything went well, you may want to verify that `cumulative = 1 - exp.(-chaz)`
@@ -95,6 +95,9 @@ chaz2haz(x,chaz, bw)
 ```
 
 where, in the second case, `bw` is a parameter used for smoothing.
+
+## Using DataFrames
+`nelson_aalen`, `kaplan_meier` and Cox regression can be used with Nullable Arrays. The rows missing relevant data will be discarded.
 
 ## To do list:
 - Documentation + tests + examples

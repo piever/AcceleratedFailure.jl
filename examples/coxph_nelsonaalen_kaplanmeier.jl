@@ -9,13 +9,13 @@ gr()
 
 # Load DataFrame and create "event" column
 filepath = joinpath(Pkg.dir("Survival", "examples"), "rossi.csv")
-rossi = CSV.read(filepath);
-rossi[:event] = Event.(convert(Array, rossi[:week]),convert(Array,rossi[:arrest]) .== 0)
+rossi = CSV.read(filepath; nullable = false)
+rossi[:event] = Event.(rossi[:week],rossi[:arrest] .== 0)
 
 # kaplan_meier and nelson_aalen method to estimate cdf and cumulative hazard respectively
-plot(kaplan_meier(convert(Array,rossi[:event]))..., line = :step)
+plot(kaplan_meier(rossi[:event])..., line = :step)
 
-plot(nelson_aalen(convert(Array,rossi[:event])), line = :step)
+plot(nelson_aalen(rossi[:event])..., line = :step)
 
 # Run Cox regression
 outcome = coxph(event ~ fin+age+race+wexp+mar+paro+prio,rossi)
