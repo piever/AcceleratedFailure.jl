@@ -27,7 +27,7 @@ Load dataset and create event column. Event.time is time, whereas Event.censored
 ```julia
 filepath = joinpath(Pkg.dir("Survival", "examples"), "rossi.csv")
 rossi = CSV.read(filepath; nullable = false)
-rossi[:event] = Event.(rossi[:week],rossi[:arrest]) .== 0)
+rossi[:event] = Event.(rossi[:week], rossi[:arrest].== 0)
 ```
 
 Run Cox regression

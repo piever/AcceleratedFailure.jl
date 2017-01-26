@@ -13,6 +13,7 @@ include("kaplanmeier.jl")
 include("nelsonaalen.jl")
 include("optimization.jl")
 include("coxph.jl")
+include("aft.jl")
 
 export Event
 export EventHistoryModel
