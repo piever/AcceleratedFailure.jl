@@ -17,6 +17,7 @@ include("optimization.jl")
 include("coxph.jl")
 include("aft_gradhes.jl")
 include("aft.jl")
+include("distributions.jl")
 
 export Event
 export EventHistoryModel

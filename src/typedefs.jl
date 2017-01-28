@@ -1,3 +1,7 @@
+###############################################################
+######################EVENT###################################
+###############################################################
+
 type EventHistoryModel
     model::AbstractString
     formula::Formula
@@ -36,6 +40,9 @@ end
 
 Base.isless(a::Event, b::Event) = isless((a.time, a.censored), (b.time,b.censored))
 
+###############################################################
+######################SURVWINDOW###############################
+###############################################################
 
 type SurvWindow{S<:Real, T<:Real}
     t1::S
@@ -51,12 +58,23 @@ function Base.show(io::IO, obj::SurvWindow)
     print(io, obj.instant ? obj.t1:"[$(obj.t1),$(obj.t2))")
 end
 
-type Pdistribution{F1<:Function, F2<:Function, F3<:Function, F4<:Function}
+type Pdistribution{F1<:Function, F2<:Function, F3<:Function, F4<:Function, F5<:Function}
     pdf::F1
     cdf::F2
     M::Int64
     gradlog::F3
     heslog::F4
+    quantile::F5
+end
+
+Pdistribution(a,b,c) = Pdistribution(a,b,c,
+(ϕ,t)->error("undefined gradlog!"), (ϕ,t)->error("undefined gradhes!"), (ϕ,t)->error("undefined quantile!"))
+
+ll(s::SurvWindow,pdist::Pdistribution,ϕ) = s.instant ?
+log(pdist.pdf(ϕ,s.t1)) : log(pdist.cdf(ϕ,s.t2)-pdist.cdf(ϕ,s.t1))
+
+function ll(s::SurvWindow,pdist::Pdistribution,ϕ, coef)
+    s.instant ? ll(coef*s,pdist,ϕ) + log(coef) : ll(coef*s,pdist,ϕ)
 end
 
 Base.:*(a,b::SurvWindow) = SurvWindow(a*b.t1, a*b.t2, b.instant)
