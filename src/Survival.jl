@@ -8,6 +8,7 @@ import ForwardDiff
 import Base.show
 using StatsBase: StatisticalModel, RegressionModel
 using ApproxFun
+using StaticArrays
 
 include("typedefs.jl")
 include("utils.jl")

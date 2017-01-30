@@ -9,3 +9,5 @@ Optim
 ForwardDiff
 Calculus
 JLD
+BenchmarkTools
+StaticArrays

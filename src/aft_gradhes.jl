@@ -3,24 +3,7 @@
 # #  1:pdist.M:1:pdist.M -> (pdist.gradlog(ϕ,aux(x))[i]*pdist.gradlog(ϕ,aux(x))[j]+pdist.heslog(ϕ,aux(x))[i,j]
 # # last row: + grad[pdist.M+1]*pdist.gradlog(ϕ,t)
 #
-# aux(x) = gama.quantile(ϕ,(sin(x)+1)/2)
-# aux_inverse(t) = asin(2*gama.cdf(ϕ,t)-1)
-#
-# function cdfgradhessiannew(pdist,ϕ,times)
-#     f1 = Fun(x-> 1/2*cos(x)*pdist.gradlog(ϕ,aux(x))[1], -π/2..π/2,50)
-#     g1 = cumsum(f1)
-#     grad = zeros(pdist.M+1)
-#     for t in times
-#         grad[1] = (extrapolate(g1,aux_inverse(Inf))-extrapolate(g1,aux_inverse(t)))/(1-pdist.cdf(ϕ,t))
-#     end
-#     grad[2] = -pdist.pdf(ϕ,t)/(1-pdist.cdf(ϕ,t))
-#     return grad, f1
-# end
-#
-#
-# aux(x) = 1. /(1. -x) - 1.
-# aux_(x) = 1. /((1. -x)*(1.-x))
-# aux_inverse(t) = 1. - 1. /(1. +t)
+
 #
 # function cdfgradhessianvec(pdist,ϕ,ts)
 #     f1 = [Fun(x->aux_(x)*pdist.pdf(ϕ,aux(x))*pdist.gradlog(ϕ,aux(x))[i], aux_inverse(0)..aux_inverse(Inf))
@@ -68,74 +51,3 @@ function aft_gradhes(dFdϕτ, d2Fdϕτ2,τ,x,M,N,β)
     hes[M+(1:N),M+(1:N)] = dFdϕτ[M+1]*d2τdβ2+d2Fdϕτ2[M+1,M+1]*dτdβ*dτdβ'
     return grad,hes
 end
-
-
-
-
-# careful! eff_t0 could go to 0!!!
-function aft_h!(grad, hes, P, P1, P2, ϕ, ts, X,M,N, β)
-    #eff_t0 = max.(times.*exp(-X*β),1e-3)
-    Xβ = X*β
-    τs = ts.*exp(-Xβ)
-    ll = sum(log.(pdf(Gamma(T,1.),eff_t0[cs]))-Xβ)
-    grad[:] = 0.
-    hess[:,:] = 0.
-    for i = 1:length(ts)
-        dFdϕτ = P1(ϕ,τs[i])
-        dF2dϕτ2 = P2(ϕ,τs[i])
-        gradt,hest = aft_gradhes(dFdϕτ, d2Fdϕτ2,τs[i],X[i,:],M,N,β)
-        gradt -= X[i,:]
-        grad += gradt
-        hes += hest
-    end
-    grad[:] = -grad
-    hes[:,:] = -hes
-    return -ll
-end
-
-
-
-
-
-
-
-
-
-
-
-#
-#
-# function cdfgradhessiano(pdist,ϕ,t)
-#     grad = zeros(length(pdist.M)+1)
-#     f1 = Fun(x->pdist.pdf(ϕ,x)*pdist.gradlog(ϕ,x)[1:pdist.M], 0..Inf)
-#     g1 = cumsum(f1)
-#     grad[1:pdist.M] = (g1(Inf)-g1(t))/(1-pdist.cdf(ϕ,t))
-#     grad[pdist.M+1] = -pdist.pdf(ϕ,t)/(1-pdist.cdf(ϕ,t))
-#     f2 = Fun(x->pdist.pdf(ϕ,x)*
-#     (pdist.gradlog(ϕ,x)[1:pdist.M]*gamma.gradlog(ϕ,x)[1:pdist.M]'+pdist.heslog(ϕ,x)[1:pdist.M,1:pdist.M]),
-#     0..Inf)
-#     g2 = cumsum(f2)
-#     hes = -grad*grad'
-#     hes[1:pdist.M, 1:pdist.M] += (g2(Inf)-g2(t))/(1-pdist.cdf(ϕ,t))
-#     hes[end, :] += grad[pdist.M+1]*pdist.gradlog(ϕ,t)
-#     hes[:,end] = hes[end, :]
-#     return grad, hes
-# end
-#
-#
-# function cdfgradhes(pdist,ϕ,t)
-#     grad = zeros(length(pdist.M)+1)
-#     f1 = Fun(x->aux_(x)*pdist.pdf(ϕ,aux(x))*pdist.gradlog(ϕ,aux(x))[1:pdist.M], aux_inverse(0)..aux_inverse(Inf))
-#     g1 = cumsum(f1)
-#     grad[1:pdist.M] = (g1(aux_inverse(Inf))-g1(aux_inverse(t)))/(1-pdist.cdf(ϕ,t))
-#     grad[pdist.M+1] = -pdist.pdf(ϕ,t)/(1-pdist.cdf(ϕ,t))
-#     f2 = Fun(x->aux_(x)*pdist.pdf(ϕ,aux(x))*
-#     (pdist.gradlog(ϕ,aux(x))[1:pdist.M]*gamma.gradlog(ϕ,aux(x))[1:pdist.M]'+pdist.heslog(ϕ,aux(x))[1:pdist.M,1:pdist.M]),
-#     aux_inverse(0)..aux_inverse(Inf))
-#     g2 = cumsum(f2)
-#     hes = -grad*grad'
-#     hes[1:pdist.M, 1:pdist.M] += (g2(aux_inverse(Inf))-g2(aux_inverse(t)))/(1-pdist.cdf(ϕ,t))
-#     hes[end, :] += grad[pdist.M+1]*pdist.gradlog(ϕ,t)
-#     hes[:,end] = hes[end, :]
-#     return grad, hes
-# end
