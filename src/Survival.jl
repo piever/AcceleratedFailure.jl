@@ -8,7 +8,7 @@ import ForwardDiff
 import Base.show
 using StatsBase: StatisticalModel, RegressionModel
 using ApproxFun
-using StaticArrays
+using FixedSizeArrays
 
 include("typedefs.jl")
 include("utils.jl")
@@ -16,8 +16,8 @@ include("kaplanmeier.jl")
 include("nelsonaalen.jl")
 include("optimization.jl")
 include("coxph.jl")
-include("aft_gradhes.jl")
 include("aft.jl")
+include("fast_integral.jl")
 include("distributions.jl")
 
 export Event

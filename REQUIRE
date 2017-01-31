@@ -10,4 +10,4 @@ ForwardDiff
 Calculus
 JLD
 BenchmarkTools
-StaticArrays
+FixedSizeArrays

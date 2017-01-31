@@ -97,5 +97,5 @@ function coxph(formula::Formula, data::DataFrame; l2_cost = 0., kwargs...)
     pvalues = 2*cdf(Normal(),-abs.(z_score))
     coefmat = CoefTable(hcat([β, se, z_score, pvalues]...),
     ["Estimate", "Std.Error", "z value", "Pr(>|z|)"], colnames, 4)
-    EventHistoryModel("Cox", formula, coefmat, M, -neg_ll, -grad, hes)
+    EventHistoryModel("Cox; ", formula, coefmat, M, -neg_ll, -grad, hes)
 end
