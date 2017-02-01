@@ -1,7 +1,7 @@
 # Indefinite integral of pdist.pdf*f is clenshaw_asin(cdf(x),clenshaw_coefs)
 
-function clenshaw_coefs{N}(pdist::Pdistribution, f::Function, ϕ, output_type::Val{N} = Val{50}())
-    f1 = Fun(x-> 1/2*cos(x)*f(pdist.quantile(ϕ, (sin(x)+1)/2)), -π/2..π/2, N-1)
+function clenshaw_coefs{N}(pdist::Distribution, f::Function, degreetype::Val{N} = Val{50}())
+    f1 = Fun(x-> 1/2*cos(x)*f(quantile(pdist, (sin(x)+1)/2)), -π/2..π/2, N-1)
     g1 = cumsum(f1)
     len = min(length(g1.coefficients),N)
     (len < length(g1.coefficients)) && warn("I'm truncating the coefficients!")

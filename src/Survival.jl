@@ -9,6 +9,7 @@ import Base.show
 using StatsBase: StatisticalModel, RegressionModel
 using ApproxFun
 using FixedSizeArrays
+import Distributions.pdf, Distributions.cdf, Distributions.quantile
 
 include("typedefs.jl")
 include("utils.jl")

@@ -58,30 +58,7 @@ function Base.show(io::IO, obj::SurvWindow)
     print(io, obj.instant ? obj.t₀:"[$(obj.t₀),$(obj.t₁))")
 end
 
-###############################################################
-######################PDISTRIBUTIONS###########################
-###############################################################
-
-type Pdistribution{F1<:Function, F2<:Function, F3<:Function, F4<:Function, F5<:Function}
-    pdf::F1
-    cdf::F2
-    M::Int64
-    gradlog::F3
-    heslog::F4
-    quantile::F5
-end
-
-Pdistribution(a,b,c) = Pdistribution(a,b,c,
-(ϕ,t)->error("undefined gradlog!"), (ϕ,t)->error("undefined gradhes!"), (ϕ,t)->error("undefined quantile!"))
-
-ll(s::SurvWindow,pdist::Pdistribution,ϕ) = s.instant ?
-log(pdist.pdf(ϕ,s.t₀)) : log(pdist.cdf(ϕ,s.t₁)-pdist.cdf(ϕ,s.t₀))
-
-function ll(s::SurvWindow,pdist::Pdistribution,ϕ, coef)
-    s.instant ? ll(coef*s,pdist,ϕ) + log(coef) : ll(coef*s,pdist,ϕ)
-end
-
-Base.:*(a,b::SurvWindow) = SurvWindow(a*b.t₀, a*b.t₁, b.instant)
+#Base.:*(a,b::SurvWindow) = SurvWindow(a*b.t₀, a*b.t₁, b.instant)
 
 ###############################################################
 ######################DERIVATIVES AFT##########################
