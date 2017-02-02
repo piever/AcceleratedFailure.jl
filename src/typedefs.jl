@@ -58,8 +58,6 @@ function Base.show(io::IO, obj::SurvWindow)
     print(io, obj.instant ? obj.t₀:"[$(obj.t₀),$(obj.t₁))")
 end
 
-#Base.:*(a,b::SurvWindow) = SurvWindow(a*b.t₀, a*b.t₁, b.instant)
-
 ###############################################################
 ######################DERIVATIVES AFT##########################
 ###############################################################
@@ -112,4 +110,21 @@ function add_ders!(s::SmoothLog, ders::Derivatives, x, M , N)
             s.hes[i+M,j+M] += ders.d²s_dc²[i,j]*x[i]*x[j]
         end
     end
+end
+
+###############################################################
+######################INTCOEFS#################################
+###############################################################
+
+type IntCoefs{R<:Number, N}
+    ds_dϕ::Array{Vec{N,R},1}
+    ds_dϕds_dϕᵗ::Array{Vec{N,R},2}
+    d²s_dϕ²::Array{Vec{N,R},2}
+end
+
+# Hessiano sbagliatooooooo!!!!!!!! Ripensaci beneeeeeeeeee!!!!!!!!!!!! e i quantilesssssss!!!!!!!!!!!
+function IntCoefs(pdist::Distribution, degreetype = Val{50}())
+    IntCoefs([clenshaw_coefs(pdist, t -> ds_dϕ(pdist,t)[i], degreetype) for i in eachindex(pdist.params)],
+    [clenshaw_coefs(pdist, t -> ds_dϕ(pdist,t)[i]*ds_dϕ(pdist,t)[j], degreetype) for i in eachindex(pdist.params), j in eachindex(pdist.params)],
+    [clenshaw_coefs(pdist, t -> d²s_dϕ²(pdist,t)[i,j], degreetype) for i in eachindex(pdist.params), j in eachindex(pdist.params)])
 end
