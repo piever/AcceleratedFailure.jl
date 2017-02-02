@@ -2,7 +2,8 @@ function newton_raphson(f_,h_!,x; ρ = 0.5, c = 1e-4, tol = 1e-4)
     grad= fill(Inf,length(x))
     hes= ones(length(x),length(x))
     y = 1.
-    while norm(grad) > tol
+    search_dir = fill(Inf,length(x))
+    while norm(search_dir) > tol
         y = h_!(x, grad, hes)
         search_dir = -(cholfact(Positive, hes)\grad)
         step_size = 1.

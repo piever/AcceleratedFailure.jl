@@ -89,25 +89,25 @@ end
 function add_ders!(s::SmoothLog, ders::Derivatives, x, M , N)
     s.val += ders.loglik
     for i = 1:M
-        s.grad[i] += ders.ds_dϕ[i]
+        s.gradlog[i] += ders.ds_dϕ[i]
     end
     for i = 1:N
-        s.grad[i+M] += ders.ds_dc*x[i]
+        s.gradlog[i+M] += ders.ds_dc*x[i]
     end
     for j = 1:M
         for i = 1:M
-            s.hes[i,j] += ders.d²s_dϕ²[i,j]
+            s.heslog[i,j] += ders.d²s_dϕ²[i,j]
         end
     end
     for j = 1:M
         for i = 1:N
-            s.hes[i+M,j] += ders.d²s_dcdϕ[i,j]
-            s.hes[j, i+M] = s.hes[i+M,j]
+            s.heslog[i+M,j] += ders.d²s_dcdϕ[j]*x[i]
+            s.heslog[j, i+M] = s.heslog[i+M,j]
         end
     end
     for j = 1:N
         for i = 1:N
-            s.hes[i+M,j+M] += ders.d²s_dc²[i,j]*x[i]*x[j]
+            s.heslog[i+M,j+M] += ders.d²s_dc²*x[i]*x[j]
         end
     end
 end
@@ -123,7 +123,7 @@ end
 
 # Hessiano sbagliatooooooo!!!!!!!! Ripensaci beneeeeeeeeee!!!!!!!!!!!! e i quantilesssssss!!!!!!!!!!!
 function IntCoefs(pdist::Distribution, degreetype = Val{50}())
-    IntCoefs([clenshaw_coefs(pdist, t -> ds_dϕ(pdist,t)[i], degreetype) for i in eachindex(pdist.params)],
-    [clenshaw_coefs(pdist, t -> ds_dϕ(pdist,t)[i]*ds_dϕ(pdist,t)[j] + d²s_dϕ²(pdist,t)[i,j], degreetype)
+    IntCoefs([clenshaw_coefs(pdist, t -> ds_dϕ(pdist,t, i), degreetype) for i in eachindex(pdist.params)],
+    [clenshaw_coefs(pdist, t -> ds_dϕ(pdist,t, i)*ds_dϕ(pdist,t, j) + d²s_dϕ²(pdist,t, i, j), degreetype)
     for i in eachindex(pdist.params), j in eachindex(pdist.params)])
 end
