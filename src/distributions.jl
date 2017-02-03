@@ -1,5 +1,5 @@
-function compute_loglik(s::SurvWindow, dist::Distribution, coef)
-    if s.instant
+function compute_loglik(s::EventWindow, dist::Distribution, coef)
+    if s.t₁ == s.t₀
         return log(pdf(dist,s.t₀*exp(-coef)))-coef
     elseif s.t₁ < Inf
         return log(cdf(dist,s.t₁*exp(-coef))-cdf(dist,s.t₀*exp(-coef)))
@@ -8,9 +8,9 @@ function compute_loglik(s::SurvWindow, dist::Distribution, coef)
     end
 end
 
-function compute_ders!(ders, s, pdist::Distribution, c, int_coefs)
+function compute_ders!(ders, s::EventWindow, pdist::Distribution, c, int_coefs)
     M = length(pdist.params)
-    if s.instant
+    if s.t₁ == s.t₀
         τ₀ = s.t₀*exp(-c)
         ders.loglik       = log(pdf(pdist,τ₀))-c
         for i in 1:M

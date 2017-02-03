@@ -19,7 +19,7 @@ end
 nelson_aalen(events::NullableArray, args...) = nelson_aalen(events.values[!events.isnull], args...)
 nelson_aalen(events::AbstractArray, args...) = nelson_aalen(convert(Array,events), args...)
 
-function nelson_aalen(res::EventHistoryModel)
+function nelson_aalen(res::SurvivalModel)
     nelson_aalen(convert(Array,res.M.df[:,1]),
     exp.(((DataFrames.ModelMatrix(res.M).m)[:,2:end])*(res.coefmat.cols[1])))
 end

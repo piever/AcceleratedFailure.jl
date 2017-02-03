@@ -26,7 +26,7 @@ println(median(tempo2.times)*1e-9)
 
 ders = Survival.Derivatives(1)
 int_coefs = Survival.IntCoefs(pdist)
-for s in [Survival.SurvWindow(10.),Survival.SurvWindow(7.,Inf),Survival.SurvWindow(7.,12.)]
+for s in [Survival.EventWindow(10.),Survival.EventWindow(7.,Inf),Survival.EventWindow(7.,12.)]
     c = 1.
     Survival.compute_ders!(ders, s, pdist, c, int_coefs )
     value = Survival.compute_loglik(s,pdist, c)

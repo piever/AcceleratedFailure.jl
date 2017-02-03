@@ -32,8 +32,10 @@ function aft_h!(grad, hes, S, X, ϕβ, pdist ,M, N, accum_big_ders, degreetype)
     return - accum_big_ders.val
 end
 
+aft{T<:Real}(S::AbstractVector{Event{T}},X::AbstractArray, pdist, degreetype; kwargs...) =
+aft(EventWindow.(S),X::AbstractArray, pdist, degreetype; kwargs...)
 
-function aft(S::AbstractVector,X::AbstractArray, pdist, degreetype; kwargs...)
+function aft(S::AbstractVector{EventWindow},X::AbstractArray, pdist, degreetype; kwargs...)
     M = length(pdist.params)
     N = size(X,2)
     accum_big_ders = SmoothLog(0., zeros(M+N), zeros(M+N,M+N))
@@ -54,5 +56,5 @@ function aft(formula::Formula, data::DataFrame, pdist, degreetype = Val{50}(); k
     pvalues = 2*cdf(Normal(),-abs.(z_score))
     coefmat = CoefTable(hcat([ϕβ, se, z_score, pvalues]...),
     ["Estimate", "Std.Error", "z value", "Pr(>|z|)"], colnames, 4)
-    EventHistoryModel("Accelerated Failure Time, dist = $pdist;\n", formula, coefmat, M, -neg_ll, -grad, hes)
+    SurvivalModel("Accelerated Failure Time, dist = $pdist;\n", formula, coefmat, M, -neg_ll, -grad, hes)
 end

@@ -1,8 +1,8 @@
 ###############################################################
-######################EVENT###################################
+######################SURVIVAL MODEL###########################
 ###############################################################
 
-type EventHistoryModel
+type SurvivalModel
     model::AbstractString
     formula::Formula
     coefmat::CoefTable
@@ -12,12 +12,15 @@ type EventHistoryModel
     fischer_info::Array{Float64,2}
 end
 
-# coefnames !!!
 
-function show(io::IO, obj::EventHistoryModel)
+function show(io::IO, obj::SurvivalModel)
     print(io,"\nModel: ", obj.model, obj.formula,"\n\n")
     print(io,obj.coefmat)
 end
+
+###############################################################
+######################EVENT####################################
+###############################################################
 
 immutable Event{T<:Real}
     time::T
@@ -41,21 +44,39 @@ end
 Base.isless(a::Event, b::Event) = isless((a.time, a.censored), (b.time,b.censored))
 
 ###############################################################
-######################SURVWINDOW###############################
+######################EVENT WINDOW#############################
 ###############################################################
 
-type SurvWindow{S<:Real, T<:Real}
-    t₀::S
-    t₁::T
-    instant::Bool
+immutable EventWindow
+    t₀::Float64
+    t₁::Float64
 end
 
-SurvWindow{S<:Real}(t::S) = SurvWindow(t,true)
-SurvWindow{S<:Real}(t::S,i::Bool) = i ? SurvWindow(t,t,true) : SurvWindow(t,Inf,false)
-SurvWindow{S<:Real, T<:Real}(s::S,t::T) = SurvWindow(s,t,false)
+EventWindow{S<:Real}(t::S) = EventWindow(t, t)
+EventWindow(ev::Event) = ev.censored ? EventWindow(ev.time,Inf) : EventWindow(ev.time,ev.time)
 
-function Base.show(io::IO, obj::SurvWindow)
-    print(io, obj.instant ? obj.t₀:"[$(obj.t₀),$(obj.t₁))")
+function Base.show(io::IO, obj::EventWindow)
+    if obj.t₀ == obj.t₁
+        print(io, obj.t₀)
+    elseif obj.t₁ == Inf
+        print(io, obj.t₀, "+")
+    else
+        print(io, "[$(obj.t₀),$(obj.t₁))")
+    end
+end
+
+function Base.parse(T::Type{EventWindow},str::String)
+    if str[end] == '+'
+        t₀ = parse(str[1:(end-1)])
+        return EventWindow(t₀,Inf)
+    elseif str[end] == ')'
+        substr = str[2:end-1]
+        splitstr = split(substr,',')
+        return EventWindow(parse.(splitstr)...)
+    else
+        t₀ = parse(str)
+        return EventWindow(t₀, t₀)
+    end
 end
 
 ###############################################################
@@ -121,7 +142,6 @@ type IntCoefs{R<:Number, N}
     hggt::Array{Vec{N,R},2}
 end
 
-# Hessiano sbagliatooooooo!!!!!!!! Ripensaci beneeeeeeeeee!!!!!!!!!!!! e i quantilesssssss!!!!!!!!!!!
 function IntCoefs(pdist::Distribution, degreetype = Val{50}())
     IntCoefs([clenshaw_coefs(pdist, t -> ds_dϕ(pdist,t, i), degreetype) for i in eachindex(pdist.params)],
     [clenshaw_coefs(pdist, t -> ds_dϕ(pdist,t, i)*ds_dϕ(pdist,t, j) + d²s_dϕ²(pdist,t, i, j), degreetype)

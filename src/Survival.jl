@@ -22,11 +22,13 @@ include("fast_integral.jl")
 include("distributions.jl")
 
 export Event
-export EventHistoryModel
+export EventWindow
 export coxph
 export nelson_aalen
 export kaplan_meier
 export chaz2cdf
 export chaz2haz
+export aft
+export PGamma
 
 end

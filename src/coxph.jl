@@ -61,7 +61,7 @@ function cox_h!(grad,hes, S, fs, ls, ξ , X, β, λ, alive, afterΘ, afterXΘ, a
     return y
 end
 
-function coxph(S::AbstractVector,X::AbstractArray; l2_cost = 0., kwargs...)
+function coxph{T<:Real}(S::AbstractVector{Event{T}},X::AbstractArray; l2_cost = 0., kwargs...)
     ξ = zeros(size(X,1),size(X,2),size(X,2))
     for i in 1:size(X,1)
         ξ[i,:,:] = X[i,:]*X[i,:]'
@@ -97,5 +97,5 @@ function coxph(formula::Formula, data::DataFrame; l2_cost = 0., kwargs...)
     pvalues = 2*cdf(Normal(),-abs.(z_score))
     coefmat = CoefTable(hcat([β, se, z_score, pvalues]...),
     ["Estimate", "Std.Error", "z value", "Pr(>|z|)"], colnames, 4)
-    EventHistoryModel("Cox; ", formula, coefmat, M, -neg_ll, -grad, hes)
+    SurvivalModel("Cox; ", formula, coefmat, M, -neg_ll, -grad, hes)
 end

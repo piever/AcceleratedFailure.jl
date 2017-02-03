@@ -14,6 +14,9 @@ include("basic_fit.jl")
 @test_approx_eq_eps exp(res.minimizer) 10 1e-1
 println("Basic Gamma Fit works")
 
+# Check aft
+include("aft_test.jl")
+
 # Check efficient integration, both accuracy and speed
 include("integrate_derive.jl")
 
