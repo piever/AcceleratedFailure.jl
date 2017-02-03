@@ -9,7 +9,7 @@ W = [(t2[i]>t1[i]) ? Event(t1[i], false) : Event(t2[i], true) for i = 1:N]
 
 df = DataFrame(x = x, y = y, z = z, a = W)
 
-res = aft(a ~ 1 + x +y + x*y+ z, df, PGamma(); tol = 1e-3, c = 1e-4)
+res = aft(a ~ 1 + x +y + x*y+ z, df, PGamma(); tol = 1e-3)
 
 true_res = [log(10), 0., 1., -0.3, 0., 0.]
 @test_approx_eq_eps res.coefmat.cols[1] true_res 1e-1

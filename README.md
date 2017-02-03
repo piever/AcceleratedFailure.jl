@@ -96,9 +96,49 @@ chaz2haz(x,chaz, bw)
 
 where, in the second case, `bw` is a parameter used for smoothing.
 
-## Using DataFrames
-`nelson_aalen`, `kaplan_meier` and Cox regression can be used with Nullable Arrays. The rows missing relevant data will be discarded.
+## Accelerated Failure Time models
 
-## To do list:
-- Documentation + tests + examples
-- Accelerated failure time models
+This package also supports [accelerated failure time models](https://en.wikipedia.org/wiki/Accelerated_failure_time_model).
+
+```julia
+using Distributions
+using DataFrames
+using Survival
+```
+
+Let's generate a fake dataset:
+
+```julia
+N = 50000
+x = randn(N)
+y = randn(N)
+z = randn(N)
+t1 = rand.(Gamma.(10,1*exp.(x-0.3y)))
+t2 = rand(Gamma(15,1),N)
+W = [(t2[i]>t1[i]) ? Event(t1[i], false) : Event(t2[i], true) for i = 1:N]
+df = DataFrame(x = x, y = y, z = z, a = W)
+```
+
+Let's specify the formula and distribution (only `PGamma` is implemented so far, where `PGamma(params) = Gamma(params[1],1)`):
+
+```julia
+res = aft(a ~ 1 + x +y + x*y+ z, df, PGamma(); tol = 1e-3)
+```
+
+The outcome should look something like this:
+
+```
+Model: Accelerated Failure Time, dist = Survival.PGamma(params=[2.33543]);
+Formula: a ~ 1 + x + y + x * y + z
+
+                Estimate  Std.Error   z value Pr(>|z|)
+params1          2.33543  0.0237773   98.2207   <1e-99
+(Intercept)   -0.0348241  0.0259545  -1.34174   0.1797
+x                1.00741 0.00711357   141.617   <1e-99
+y              -0.294449 0.00622455  -47.3045   <1e-99
+z            -0.00455039 0.00522966 -0.870112   0.3842
+x & y          0.0116439 0.00676265   1.72179   0.0851
+```
+
+## Using DataFrames
+`nelson_aalen`, `kaplan_meier`, Cox regression and accelerated failure time models can be used with Nullable Arrays. The rows missing relevant data will be discarded.
