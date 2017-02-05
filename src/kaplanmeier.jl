@@ -14,5 +14,7 @@ function kaplan_meier(events::Array)
     end
 end
 
-kaplan_meier(events::NullableArray, args...) = kaplan_meier(events.values[!events.isnull], args...)
+if isdefined(:NullableArray)
+    kaplan_meier(events::NullableArray, args...) = kaplan_meier(events.values[!events.isnull], args...)
+end
 kaplan_meier(events::AbstractArray, args...) = kaplan_meier(convert(Array,events), args...)

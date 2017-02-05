@@ -43,16 +43,21 @@ function cox_h!(grad,hes, S, fs, ls, ξ , X, β, λ, alive, afterΘ, afterXΘ, a
             ρ = (alive[j]-alive[fs[i]])/(alive[fs[i]]-alive[ls[i]+1])
             ϕ = afterΘ[fs[i]]-ρ*(afterΘ[fs[i]]-afterΘ[ls[i]+1])
             for k in eachindex(Z)
-                Z[k] = afterXΘ[fs[i],k]-ρ*(afterXΘ[fs[i],k]-afterXΘ[ls[i]+1,k])
+                @inbounds Z[k] = afterXΘ[fs[i],k]-ρ*(afterXΘ[fs[i],k]-afterXΘ[ls[i]+1,k])
             end
             for k2 in 1:size(Ξ,2)
                 for k1 in 1:size(Ξ,1)
-                    Ξ[k1,k2] = afterξΘ[fs[i],k1,k2]-ρ*(afterξΘ[fs[i],k1,k2]-afterξΘ[ls[i]+1,k1,k2])
+                    @inbounds Ξ[k1,k2] = afterξΘ[fs[i],k1,k2]-ρ*(afterξΘ[fs[i],k1,k2]-afterξΘ[ls[i]+1,k1,k2])
                 end
             end
             y -= Xβ[j] -log(ϕ)
-            grad[:] += - X[j,:]+Z/ϕ
-            hes[:, :] += Ξ/ϕ - Z*Z'/ϕ^2
+            for k2 in 1:size(Ξ,2)
+                @inbounds grad[k2] -= X[j,k2]
+                @inbounds grad[k2] += Z[k2]/ϕ
+                for k1 in 1:size(Ξ,1)
+                    @inbounds hes[k1, k2] += Ξ[k1,k2]/ϕ - Z[k1]*Z[k2]/ϕ^2
+                end
+            end
         end
     end
     y += λ*dot(β',β)
@@ -89,7 +94,7 @@ function coxph(formula::Formula, data::DataFrame; l2_cost = 0., kwargs...)
     M = DataFrames.ModelFrame(formula,sorted_data)
     S = convert(Array, M.df[:,1])
     model_matrix = DataFrames.ModelMatrix(M)
-    X = model_matrix.m[:,2:size(model_matrix.m,2)]
+    X = convert(Array, model_matrix.m[:,2:size(model_matrix.m,2)])
     β, neg_ll,grad, hes =  coxph(S, X; l2_cost = l2_cost, kwargs...)
     colnames = coefnames(M)[2:end]
     se = sqrt.(diag(pinv(hes)))

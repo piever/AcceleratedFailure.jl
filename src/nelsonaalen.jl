@@ -16,7 +16,9 @@ function nelson_aalen(events::Array, Θ = ones(length(events)))
     end
 end
 
-nelson_aalen(events::NullableArray, args...) = nelson_aalen(events.values[!events.isnull], args...)
+if isdefined(:NullableArray)
+    nelson_aalen(events::NullableArray, args...) = nelson_aalen(events.values[!events.isnull], args...)
+end
 nelson_aalen(events::AbstractArray, args...) = nelson_aalen(convert(Array,events), args...)
 
 function nelson_aalen(res::SurvivalModel)
