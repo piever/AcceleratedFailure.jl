@@ -61,15 +61,22 @@ function cox_h!(grad,hes, S, fs, ls, ξ , X, β, λ, alive, afterΘ, afterXΘ, a
         end
     end
     y += λ*dot(β',β)
-    grad[:] +=  2*λ*β
-    hes[:,:] +=  2*λ*eye(size(X,2))
+
+    for k1 in 1:size(Ξ,1)
+        grad[k1] +=  2*λ*β[k1]
+        hes[k1,k1] +=  2*λ
+    end
     return y
 end
 
-function coxph{T<:Real}(S::AbstractVector{Event{T}},X::AbstractArray; l2_cost = 0., kwargs...)
+function coxph(S::AbstractVector,X::AbstractArray; l2_cost = 0., kwargs...)
     ξ = zeros(size(X,1),size(X,2),size(X,2))
-    for i in 1:size(X,1)
-        ξ[i,:,:] = X[i,:]*X[i,:]'
+    for k2 in 1:size(ξ,3)
+        for k1 in 1:size(ξ,2)
+            for i in 1:size(ξ,1)
+                @inbounds ξ[i,k1,k2] = X[i,k1]*X[i,k2]
+            end
+        end
     end
 
     # compute first and last!
@@ -94,7 +101,7 @@ function coxph(formula::Formula, data::DataFrame; l2_cost = 0., kwargs...)
     M = DataFrames.ModelFrame(formula,sorted_data)
     S = convert(Array, M.df[:,1])
     model_matrix = DataFrames.ModelMatrix(M)
-    X = convert(Array, model_matrix.m[:,2:size(model_matrix.m,2)])
+    X = model_matrix.m[:,2:size(model_matrix.m,2)]
     β, neg_ll,grad, hes =  coxph(S, X; l2_cost = l2_cost, kwargs...)
     colnames = coefnames(M)[2:end]
     se = sqrt.(diag(pinv(hes)))
