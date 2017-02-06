@@ -1,11 +1,11 @@
 function newton_raphson(f_,h_!,x; ρ = 0.5, c = 1e-4, tol = 1e-4)
-    grad= fill(Inf,length(x))
-    hes= ones(length(x),length(x))
-    y = 1.
-    search_dir = fill(Inf,length(x))
-    while norm(search_dir) > tol
+    grad= zeros(length(x))
+    hes= zeros(length(x),length(x))
+    y = 0.
+    while true
         y = h_!(x, grad, hes)
         search_dir = -(cholfact(Positive, hes)\grad)
+        (norm(search_dir) > tol) || break
         step_size = 1.
         while f_(x+search_dir*step_size) > y+c*step_size*dot(grad',search_dir)
             step_size *= ρ
@@ -14,13 +14,4 @@ function newton_raphson(f_,h_!,x; ρ = 0.5, c = 1e-4, tol = 1e-4)
         x = x + search_dir*step_size
     end
     return x, y, grad, hes
-end
-
-function newton_raphson(f_, x; ρ = 0.5, c = 1e-4, tol = 1e-4)
-    h_! = function(x,grad,hes)
-        ForwardDiff.gradient!(grad,f_,x)
-        ForwardDiff.hessian!(hes,f_,x)
-        return f_(x)
-    end
-    return newton_raphson(f_, h_!, x; ρ = ρ, c = c, tol = tol)
 end

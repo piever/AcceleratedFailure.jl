@@ -4,7 +4,6 @@ using GLM
 using Optim
 using PositiveFactorizations
 using Distributions
-import ForwardDiff
 import Base.show
 using StatsBase: StatisticalModel, RegressionModel
 using ApproxFun

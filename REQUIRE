@@ -6,7 +6,6 @@ StatsBase
 PositiveFactorizations
 Distributions
 Optim
-ForwardDiff
 Calculus
 JLD
 BenchmarkTools
