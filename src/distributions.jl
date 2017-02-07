@@ -1,4 +1,4 @@
-function compute_loglik(s::EventWindow, dist::Distribution, coef)
+function compute_loglik(s, dist, coef)
     if s.t₁ == s.t₀
         return log(pdf(dist,s.t₀*exp(-coef)))-coef
     elseif s.t₁ < Inf
@@ -8,22 +8,22 @@ function compute_loglik(s::EventWindow, dist::Distribution, coef)
     end
 end
 
-function compute_ders!(ders, s::EventWindow, pdist::Distribution, c, int_coefs)
+function compute_ders!(ders, s, pdist::Distribution, c, int_coefs)
     M = length(pdist.params)
     if s.t₁ == s.t₀
         τ₀ = s.t₀*exp(-c)
         ders.loglik       = log(pdf(pdist,τ₀))-c
         for i in 1:M
-            ders.ds_dϕ[i] = ds_dϕ(pdist, τ₀, i)
+            ders.ds_dϕ[i] = ds_dϕ(pdist, τ₀, int_coefs,i)
         end
-        ders.ds_dc        = ds_dc(pdist, τ₀)
+        ders.ds_dc        = ds_dc(pdist, τ₀, int_coefs)
         for j in 1:M, i in 1:M
-            ders.d²s_dϕ²[i,j] = d²s_dϕ²(pdist, τ₀, i, j)
+            ders.d²s_dϕ²[i,j] = d²s_dϕ²(pdist, τ₀,int_coefs, i, j)
         end
         for i in 1:M
-            ders.d²s_dcdϕ[i]  = d²s_dcdϕ(pdist, τ₀, i)
+            ders.d²s_dcdϕ[i]  = d²s_dcdϕ(pdist, τ₀, int_coefs, i)
         end
-        ders.d²s_dc²      = d²s_dc²(pdist, τ₀)
+        ders.d²s_dc²      = d²s_dc²(pdist, τ₀, int_coefs)
     elseif s.t₁ < Inf
         τ₁,τ₀              = [s.t₁,s.t₀].*exp(-c)
         cdf₁,cdf₀          = cdf.([pdist],[τ₁,τ₀])
@@ -66,10 +66,10 @@ end
 ds_dϕ(pdist::Distribution, t, x, int_coefs, i) = clenshaw_asin(x,int_coefs.g[i])
 ds_dc(pdist::Distribution, t, x, int_coefs) = -t*pdf(pdist, t)
 d²s_dϕ²(pdist::Distribution, t, x, int_coefs, i, j) = clenshaw_asin(x,int_coefs.hggt[i,j])
-d²s_dcdϕ(pdist::Distribution, t, x, int_coefs, i) = -t*pdf(pdist, t)*ds_dϕ(pdist, t, i)
-d²s_dc²(pdist::Distribution, t, x, int_coefs) = -t*pdf(pdist, t)*ds_dc(pdist, t)
+d²s_dcdϕ(pdist::Distribution, t, x, int_coefs, i) = -t*pdf(pdist, t)*ds_dϕ(pdist, t, int_coefs, i)
+d²s_dc²(pdist::Distribution, t, x, int_coefs) = -t*pdf(pdist, t)*ds_dc(pdist, t, int_coefs)
 
-
+auxvec(pdist::Distribution) = Array{Float64,1}(0)
 ###############################################################
 ######################GAMMA####################################
 ###############################################################
@@ -85,8 +85,11 @@ for op in [:pdf, :cdf, :quantile]
 end
 
 
-ds_dϕ(pdist::PGamma, t, i)    =  exp(pdist.params[1])*(log(t)-t-polygamma(0,exp(pdist.params[1]))+1+pdist.params[1])
-ds_dc(pdist::PGamma, t)    = -exp(pdist.params[1])*(1-t)
-d²s_dϕ²(pdist::PGamma, t, i, j)  = ds_dϕ(pdist, t,i)-exp(2*pdist.params[1])*polygamma(1,exp(pdist.params[1]))+exp(pdist.params[1])
-d²s_dcdϕ(pdist::PGamma, t, i) = -exp(pdist.params[1])*(1-t)
-d²s_dc²(pdist::PGamma, t)  = - exp(pdist.params[1])*t
+ds_dϕ(pdist::PGamma, t, int_coefs, i)    =  exp(pdist.params[1])*(log(t)-t) + int_coefs.aux[1]
+ds_dc(pdist::PGamma, t, int_coefs)    = -exp(pdist.params[1])*(1-t)
+d²s_dϕ²(pdist::PGamma, t, int_coefs,i, j)  = ds_dϕ(pdist, t, int_coefs,i)+ int_coefs.aux[2]
+d²s_dcdϕ(pdist::PGamma, t, int_coefs, i) = -exp(pdist.params[1])*(1-t)
+d²s_dc²(pdist::PGamma, t, int_coefs)  = - exp(pdist.params[1])*t
+
+auxvec(pdist::PGamma) = [exp(pdist.params[1])*(-polygamma(0,exp(pdist.params[1]))+1+pdist.params[1]),
+-exp(2*pdist.params[1])*polygamma(1,exp(pdist.params[1]))+exp(pdist.params[1])]

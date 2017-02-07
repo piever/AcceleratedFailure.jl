@@ -35,7 +35,7 @@ end
 aft{T<:Real}(S::AbstractVector{Event{T}},X::AbstractArray, pdist, degreetype; kwargs...) =
 aft(EventWindow.(S),X::AbstractArray, pdist, degreetype; kwargs...)
 
-function aft(S::AbstractVector{EventWindow},X::AbstractArray, pdist, degreetype; kwargs...)
+function aft(S::AbstractVector,X::AbstractArray, pdist, degreetype; kwargs...)
     St = [(s.t₀+s.t₁)/2 for s in S]
     valid = isfinite(St)
     res = glm(X[valid,:], St[valid], Gamma(), LogLink())

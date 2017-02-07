@@ -138,12 +138,16 @@ end
 ###############################################################
 
 type IntCoefs{R<:Number, N}
+    aux::Array{R,1}
     g::Array{Vec{N,R},1}
     hggt::Array{Vec{N,R},2}
 end
 
-function IntCoefs(pdist::Distribution, degreetype = Val{50}())
-    IntCoefs([clenshaw_coefs(pdist, t -> ds_dϕ(pdist,t, i), degreetype) for i in eachindex(pdist.params)],
-    [clenshaw_coefs(pdist, t -> ds_dϕ(pdist,t, i)*ds_dϕ(pdist,t, j) + d²s_dϕ²(pdist,t, i, j), degreetype)
-    for i in eachindex(pdist.params), j in eachindex(pdist.params)])
+function IntCoefs{N}(pdist::Distribution, degreetype::Val{N} = Val{50}())
+    aux = auxvec(pdist)
+    intermediate = IntCoefs(aux,[Vec{N, Float64}(zeros(N)) for i in eachindex(pdist.params)],
+    [Vec{N, Float64}(zeros(N)) for i in eachindex(pdist.params), j in eachindex(pdist.params)])
+    IntCoefs(aux, [clenshaw_coefs(pdist, t -> ds_dϕ(pdist,t, intermediate, i), degreetype) for i in eachindex(pdist.params)],
+    [clenshaw_coefs(pdist, t -> ds_dϕ(pdist,t, intermediate, i)*ds_dϕ(pdist,t,intermediate, j) +
+    d²s_dϕ²(pdist,t, intermediate,i, j), degreetype) for i in eachindex(pdist.params), j in eachindex(pdist.params)])
 end

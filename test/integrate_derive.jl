@@ -3,7 +3,7 @@ function test_integration()
     t0 = 0.7
     t1 = 1.2
     pdist = Survival.PGamma(ϕc)
-    coefs = Survival.clenshaw_coefs(pdist,t->Survival.ds_dϕ(pdist,t,1))
+    coefs = Survival.clenshaw_coefs(pdist,log)
     return t0,t1,coefs,pdist
 end
 
@@ -15,7 +15,7 @@ println(median(tempo1.times)*1e-9)
 c0 = cdf(pdist,t0)
 c1 = cdf(pdist,t1)
 r1 = (Survival.clenshaw_asin(c1,coefs)-Survival.clenshaw_asin(c0,coefs))/(c1-c0)
-r2 = quadgk(t -> pdf(pdist,t)*Survival.ds_dϕ(pdist,t, 1), t0,t1)[1]/(c1-c0)
+r2 = quadgk(t -> pdf(pdist,t)*log(t), t0,t1)[1]/(c1-c0)
 @test_approx_eq_eps r1 r2 1e-6
 println("Efficient integration is fine: $r1 ~ $r2 ")
 
