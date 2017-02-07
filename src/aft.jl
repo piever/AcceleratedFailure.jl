@@ -36,12 +36,16 @@ aft{T<:Real}(S::AbstractVector{Event{T}},X::AbstractArray, pdist, degreetype; kw
 aft(EventWindow.(S),X::AbstractArray, pdist, degreetype; kwargs...)
 
 function aft(S::AbstractVector{EventWindow},X::AbstractArray, pdist, degreetype; kwargs...)
+    St = [(s.t₀+s.t₁)/2 for s in S]
+    valid = isfinite(St)
+    res = glm(X[valid,:], St[valid], Gamma(), LogLink())
+    T = 1/GLM.dispersion(res, true)
     M = length(pdist.params)
     N = size(X,2)
     accum_big_ders = SmoothLog(0., zeros(M+N), zeros(M+N,M+N))
     f1 = (ϕβ) -> aft_l(S, X, ϕβ, pdist, M, N)
     h1! = (ϕβ,grad,hes) -> aft_h!(grad, hes, S, X, ϕβ, pdist, M, N, accum_big_ders, degreetype)
-    return newton_raphson(f1,h1!, vcat(pdist.params,zeros(size(X,2))); kwargs...)
+    return newton_raphson(f1,h1!, vcat(log(T),coef(res)); kwargs...)
 end
 
 function aft(formula::Formula, data::DataFrame, pdist, degreetype = Val{50}(); kwargs...)

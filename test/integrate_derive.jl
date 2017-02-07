@@ -1,7 +1,7 @@
 function test_integration()
     ϕc = [log(10.)]
-    t0 = 7.
-    t1 = 12.
+    t0 = 0.7
+    t1 = 1.2
     pdist = Survival.PGamma(ϕc)
     coefs = Survival.clenshaw_coefs(pdist,t->Survival.ds_dϕ(pdist,t,1))
     return t0,t1,coefs,pdist
@@ -26,7 +26,7 @@ println(median(tempo2.times)*1e-9)
 
 ders = Survival.Derivatives(1)
 int_coefs = Survival.IntCoefs(pdist)
-for s in [Survival.EventWindow(10.),Survival.EventWindow(7.,Inf),Survival.EventWindow(7.,12.)]
+for s in [Survival.EventWindow(1.),Survival.EventWindow(0.7,Inf),Survival.EventWindow(0.7,1.2)]
     c = 1.
     Survival.compute_ders!(ders, s, pdist, c, int_coefs )
     value = Survival.compute_loglik(s,pdist, c)

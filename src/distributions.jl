@@ -81,12 +81,12 @@ end
 PGamma() = PGamma([1.])
 
 for op in [:pdf, :cdf, :quantile]
-    @eval ($op)(pdist::PGamma, t) = ($op)(Gamma(exp(pdist.params[1]),1.), t)
+    @eval ($op)(pdist::PGamma, t) = ($op)(Gamma(exp(pdist.params[1]),exp(-pdist.params[1])), t)
 end
 
 
-ds_dϕ(pdist::PGamma, t, i)    =  exp(pdist.params[1])*(log(t)-polygamma(0,exp(pdist.params[1])))
-ds_dc(pdist::PGamma, t)    = -exp(pdist.params[1])+t
-d²s_dϕ²(pdist::PGamma, t, i, j)  = ds_dϕ(pdist, t,i)-exp(2*pdist.params[1])*polygamma(1,exp(pdist.params[1]))
-d²s_dcdϕ(pdist::PGamma, t, i) = -exp(pdist.params[1])
-d²s_dc²(pdist::PGamma, t)  = - t
+ds_dϕ(pdist::PGamma, t, i)    =  exp(pdist.params[1])*(log(t)-t-polygamma(0,exp(pdist.params[1]))+1+pdist.params[1])
+ds_dc(pdist::PGamma, t)    = -exp(pdist.params[1])*(1-t)
+d²s_dϕ²(pdist::PGamma, t, i, j)  = ds_dϕ(pdist, t,i)-exp(2*pdist.params[1])*polygamma(1,exp(pdist.params[1]))+exp(pdist.params[1])
+d²s_dcdϕ(pdist::PGamma, t, i) = -exp(pdist.params[1])*(1-t)
+d²s_dc²(pdist::PGamma, t)  = - exp(pdist.params[1])*t
