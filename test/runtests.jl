@@ -7,12 +7,6 @@ using CSV
 using JLD
 using BenchmarkTools
 using FixedSizeArrays
-using Optim
-
-# Check Gamma log likelihood
-include("basic_fit.jl")
-@test_approx_eq_eps exp(res.minimizer) 10 1e-1
-println("Basic Gamma Fit works")
 
 # Check aft
 include("aft_test.jl")

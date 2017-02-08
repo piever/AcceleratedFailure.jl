@@ -70,6 +70,8 @@ d²s_dcdϕ(pdist::Distribution, t, x, int_coefs, i) = -t*pdf(pdist, t)*ds_dϕ(pd
 d²s_dc²(pdist::Distribution, t, x, int_coefs) = -t*pdf(pdist, t)*ds_dc(pdist, t, int_coefs)
 
 auxvec(pdist::Distribution) = Array{Float64,1}(0)
+
+initialize_aft(S::AbstractVector,X::AbstractArray, pdist::Distribution, N) = vcat(pdist.params,zeros(N))
 ###############################################################
 ######################GAMMA####################################
 ###############################################################
@@ -93,3 +95,11 @@ d²s_dc²(pdist::PGamma, t, int_coefs)  = - exp(pdist.params[1])*t
 
 auxvec(pdist::PGamma) = [exp(pdist.params[1])*(-polygamma(0,exp(pdist.params[1]))+1+pdist.params[1]),
 -exp(2*pdist.params[1])*polygamma(1,exp(pdist.params[1]))+exp(pdist.params[1])]
+
+function initialize_aft(S::AbstractVector,X::AbstractArray, pdist::PGamma, N)
+    St = [(s.t₀+s.t₁)/2 for s in S]
+    valid = isfinite(St)
+    res = glm(X[valid,:], St[valid], Gamma(), LogLink())
+    T = 1/GLM.dispersion(res, true)
+    return vcat(log(T),coef(res))
+end

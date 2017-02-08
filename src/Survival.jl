@@ -1,7 +1,6 @@
 module Survival
 using DataFrames
 using GLM
-using Optim
 using PositiveFactorizations
 using Distributions
 import Base.show
@@ -11,6 +10,7 @@ using FixedSizeArrays
 import Distributions.pdf, Distributions.cdf, Distributions.quantile
 
 include("typedefs.jl")
+include("distributions.jl")
 include("utils.jl")
 include("kaplanmeier.jl")
 include("nelsonaalen.jl")
@@ -18,7 +18,7 @@ include("optimization.jl")
 include("coxph.jl")
 include("aft.jl")
 include("fast_integral.jl")
-include("distributions.jl")
+
 
 export Event
 export EventWindow
