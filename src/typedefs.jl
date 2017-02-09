@@ -2,7 +2,16 @@
 ######################SURVIVAL MODEL###########################
 ###############################################################
 
-type SurvivalModel
+abstract SurvivalModel
+
+function show(io::IO, obj::SurvivalModel)
+    print(io,"\nModel: ", obj.model, obj.formula,"\n\n")
+    print(io,obj.coefmat)
+end
+
+coef(SM::SurvivalModel) = SM.coefmat.cols[1]
+
+immutable CoxModel <: SurvivalModel
     model::AbstractString
     formula::Formula
     coefmat::CoefTable
@@ -12,12 +21,31 @@ type SurvivalModel
     fischer_info::Array{Float64,2}
 end
 
-
-function show(io::IO, obj::SurvivalModel)
-    print(io,"\nModel: ", obj.model, obj.formula,"\n\n")
-    print(io,obj.coefmat)
+immutable AftModel{D<:Distribution} <: SurvivalModel
+    model::AbstractString
+    formula::Formula
+    coefmat::CoefTable
+    M::ModelFrame
+    loglik::Float64
+    score::Array{Float64,1}
+    fischer_info::Array{Float64,2}
+    dist::D
 end
 
+coef_reg(AM::AftModel) = coef(AM)[length(AM.dist.params)+1:end]
+coef_dist(AM::AftModel) = AM.dist.params
+
+function predict(AM::AftModel)
+    model_matrix = DataFrames.ModelMatrix(AM.M)
+    X = model_matrix.m
+    coefs = coef_reg(AM)
+    exp.(X*coefs)
+end
+
+function rand(AM::AftModel)
+    preds = predict(AM)
+    [rand(AM.dist)*pred for pred in preds]
+end
 ###############################################################
 ######################EVENT####################################
 ###############################################################

@@ -7,7 +7,8 @@ import Base.show
 using StatsBase: StatisticalModel, RegressionModel
 using ApproxFun
 using FixedSizeArrays
-import Distributions.pdf, Distributions.cdf, Distributions.quantile
+import Distributions.pdf, Distributions.cdf, Distributions.quantile, Distributions.rand
+import GLM.coef, GLM.predict
 
 include("typedefs.jl")
 include("distributions.jl")
@@ -29,5 +30,7 @@ export chaz2cdf
 export chaz2haz
 export aft
 export PGamma
+export coef_reg
+export coef_dist
 
 end

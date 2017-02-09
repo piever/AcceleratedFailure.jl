@@ -54,7 +54,8 @@ function aft(formula::Formula, data::DataFrame, pdist, degreetype = Val{50}(); k
     se = sqrt.(diag(pinv(hes)))
     z_score = ϕβ./se
     pvalues = 2*cdf(Normal(),-abs.(z_score))
+    pdist.params = ϕβ[1:length(pdist.params)]
     coefmat = CoefTable(hcat([ϕβ, se, z_score, pvalues]...),
     ["Estimate", "Std.Error", "z value", "Pr(>|z|)"], colnames, 4)
-    SurvivalModel("Accelerated Failure Time, dist = $pdist;\n", formula, coefmat, M, -neg_ll, -grad, hes)
+    AftModel("Accelerated Failure Time, dist = $pdist;\n", formula, coefmat, M, -neg_ll, -grad, hes, pdist)
 end

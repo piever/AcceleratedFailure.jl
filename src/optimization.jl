@@ -1,8 +1,8 @@
-function newton_raphson(f_,h_!,x; ρ = 0.5, c = 1e-4, tol = 1e-4)
+function newton_raphson(f_,h_!,x; ρ = 0.5, c = 1e-4, tol = 1e-4, max_iter = 1000)
     grad= zeros(length(x))
     hes= zeros(length(x),length(x))
     y = 0.
-    while true
+    for i = 1:max_iter
         y = h_!(x, grad, hes)
         search_dir = -(cholfact(Positive, hes)\grad)
         (norm(search_dir) > tol) || break
