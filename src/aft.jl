@@ -4,17 +4,24 @@ function aft_l(S, X, ϕβ, pdist, M, N)
     Xβ = X*β
     # Update pdist
     pdist.params[:] = ϕ
+
+    ders = Derivatives(M)
     # compute likelihood
-    loglik = compute_loglik.(S,[pdist], Xβ)
-    return -sum(loglik)
+    nll = 0.
+    for (i,s) in enumerate(S)
+        nll -= compute_loglik!(ders, s, pdist, Xβ[i])
+    end
+    return nll
 end
 
-function aft_h!(grad, hes, S, X, ϕβ, pdist ,M, N, accum_big_ders, degreetype)
+function aft_h!(grad, hes, S, X, ϕβ, pdist ,M, N, degreetype)
 
     ϕ = ϕβ[1:M]
     β = ϕβ[M+(1:N)]
     Xβ = X*β
-    zero!(accum_big_ders)
+    nll = 0.
+    grad[:] = 0.
+    hes[:,:] = 0.
     ders = Derivatives(M)
 
     # Update pdist
@@ -24,12 +31,11 @@ function aft_h!(grad, hes, S, X, ϕβ, pdist ,M, N, accum_big_ders, degreetype)
 
     for (i,s) in enumerate(S)
         x = @view X[i,:]
+        nll -= compute_loglik!(ders, s, pdist, Xβ[i])
         compute_ders!(ders, s, pdist, Xβ[i], int_coefs)
-        add_ders!(accum_big_ders, ders, x, M , N)
+        subtract_ders!(grad,hes, ders, x, M , N)
     end
-    grad[:] = - accum_big_ders.gradlog
-    hes[:,:] = - accum_big_ders.heslog
-    return - accum_big_ders.val
+    return nll
 end
 
 aft{T<:Real}(S::AbstractVector{Event{T}},X::AbstractArray, pdist, degreetype; kwargs...) =
@@ -38,9 +44,8 @@ aft(EventWindow.(S),X::AbstractArray, pdist, degreetype; kwargs...)
 function aft(S::AbstractVector,X::AbstractArray, pdist, degreetype; kwargs...)
     M = length(pdist.params)
     N = size(X,2)
-    accum_big_ders = SmoothLog(0., zeros(M+N), zeros(M+N,M+N))
     f1 = (ϕβ) -> aft_l(S, X, ϕβ, pdist, M, N)
-    h1! = (ϕβ,grad,hes) -> aft_h!(grad, hes, S, X, ϕβ, pdist, M, N, accum_big_ders, degreetype)
+    h1! = (ϕβ,grad,hes) -> aft_h!(grad, hes, S, X, ϕβ, pdist, M, N, degreetype)
     return newton_raphson(f1,h1!, initialize_aft(S, X, pdist, N); kwargs...)
 end
 

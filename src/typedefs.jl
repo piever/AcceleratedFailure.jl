@@ -111,55 +111,21 @@ end
 ######################DERIVATIVES AFT##########################
 ###############################################################
 
-type Derivatives{R<:Number}
-    loglik::R
-    ds_dϕ::Array{R,1}
-    ds_dc::R
-    d²s_dϕ²::Array{R,2}
-    d²s_dc²::R
-    d²s_dcdϕ::Array{R,1}
-end
-
-Derivatives(M::Int64) = Derivatives(0., zeros(M), 0., zeros(M,M), 0., zeros(M))
-
-type SmoothLog{R<:Number}
-    val::R
+immutable Derivatives{R<:Number}
+    τs::Array{R,1}
+    cdfs::Array{R,1}
+    ps::Array{R,1}
+    Δcdf::Array{R,0}
     gradlog::Array{R,1}
     heslog::Array{R,2}
+    gradlogint::Array{Array{R,1},1}
+    heslogint::Array{Array{R,2},1}
 end
 
-function zero!{R<:Number}(s::SmoothLog{R})
-    s.val = zero(R)
-    s.gradlog[:] = zero(R)
-    s.heslog[:] = zero(R)
-    return
-end
-
-function add_ders!(s::SmoothLog, ders::Derivatives, x, M , N)
-    s.val += ders.loglik
-    for i = 1:M
-        s.gradlog[i] += ders.ds_dϕ[i]
-    end
-    for i = 1:N
-        s.gradlog[i+M] += ders.ds_dc*x[i]
-    end
-    for j = 1:M
-        for i = 1:M
-            s.heslog[i,j] += ders.d²s_dϕ²[i,j]
-        end
-    end
-    for j = 1:M
-        for i = 1:N
-            s.heslog[i+M,j] += ders.d²s_dcdϕ[j]*x[i]
-            s.heslog[j, i+M] = s.heslog[i+M,j]
-        end
-    end
-    for j = 1:N
-        for i = 1:N
-            s.heslog[i+M,j+M] += ders.d²s_dc²*x[i]*x[j]
-        end
-    end
-end
+Derivatives(M::Int64) = Derivatives(zeros(2), zeros(2), zeros(2),
+                                    fill(0., ()), zeros(M+1), zeros(M+1,M+1),
+                                    [zeros(M+1) for i in 1:2],
+                                    [zeros(M+1,M+1) for i in 1:2])
 
 ###############################################################
 ######################INTCOEFS#################################
@@ -176,11 +142,11 @@ function IntCoefs{N}(pdist::Distribution, degreetype::Val{N} = Val{50}())
     int_coefs = IntCoefs(aux,[Vec{N, Float64}(zeros(N)) for i in eachindex(pdist.params)],
     [Vec{N, Float64}(zeros(N)) for i in eachindex(pdist.params), j in eachindex(pdist.params)])
     for i in eachindex(pdist.params)
-        int_coefs.g[i] = clenshaw_coefs(pdist, t -> ds_dϕ(pdist,t, int_coefs, i), degreetype)
+        int_coefs.g[i] = clenshaw_coefs(pdist, t -> ds(pdist,t, int_coefs, i), degreetype)
     end
     for i in eachindex(pdist.params), j in eachindex(pdist.params)
-        int_coefs.hggt[i, j] = clenshaw_coefs(pdist, t -> ds_dϕ(pdist,t, int_coefs, i)*ds_dϕ(pdist,t,int_coefs, j) +
-        d²s_dϕ²(pdist,t, int_coefs,i, j), degreetype)
+        int_coefs.hggt[i, j] = clenshaw_coefs(pdist, t -> ds(pdist,t, int_coefs, i)*ds(pdist,t,int_coefs, j) +
+        d²s(pdist,t, int_coefs,i, j), degreetype)
     end
     return int_coefs
 end

@@ -12,11 +12,12 @@ import GLM.coef, GLM.predict
 
 include("typedefs.jl")
 include("distributions.jl")
-include("utils.jl")
+include("cox_utils.jl")
 include("kaplanmeier.jl")
 include("nelsonaalen.jl")
 include("optimization.jl")
 include("coxph.jl")
+include("aft_utils.jl")
 include("aft.jl")
 include("fast_integral.jl")
 
