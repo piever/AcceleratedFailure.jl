@@ -7,7 +7,8 @@ import Base.show
 using StatsBase: StatisticalModel, RegressionModel
 using ApproxFun
 using FixedSizeArrays
-import Distributions.pdf, Distributions.cdf, Distributions.quantile, Distributions.rand
+import Distributions.pdf, Distributions.logpdf, Distributions.cdf,
+       Distributions.quantile, Distributions.rand
 import GLM.coef, GLM.predict
 
 include("typedefs.jl")

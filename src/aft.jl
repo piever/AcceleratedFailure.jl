@@ -1,32 +1,18 @@
-function aft_l(S, X, Xβ, ϕβ, pdist, M, N)
-    update_Xβ_dist!(X, Xβ, ϕβ, pdist,  M, N)
-    ders = Derivatives(M)
+function aft_l(ϕβ, rr)
+    update_Xβ_dist!(rr, ϕβ)
     # compute likelihood
-    nll = 0.
-    for (i,s) in enumerate(S)
-        nll -= compute_loglik!(ders, s, pdist, Xβ[i])
-    end
+    nll = -compute_loglik!(rr)
     return nll
 end
 
-function aft_h!(grad, hes, S, X, Xβ, ϕβ, pdist, M, N, degreetype)
-    update_Xβ_dist!(X, Xβ, ϕβ, pdist, M, N)
-    ders = Derivatives(M)
+function aft_h!(grad, hes, ϕβ, rr, degreetype)
+    update_Xβ_dist!(rr, ϕβ)
     # Compute auxiliary vector for derivatives.
-    int_coefs = IntCoefs(pdist, degreetype)
+    int_coefs = IntCoefs(rr.dist, degreetype)
 
     # Compute likelihoog, grad and hes
-
-    nll = 0.
-    grad[:] = 0.
-    hes[:,:] = 0.
-
-    for (i,s) in enumerate(S)
-        x = @view X[i,:]
-        nll -= compute_loglik!(ders, s, pdist, Xβ[i])
-        compute_ders!(ders, s, pdist, Xβ[i], int_coefs)
-        subtract_ders!(grad,hes, ders, x, M , N)
-    end
+    nll = -compute_loglik!(rr)
+    subtract_ders!(grad,hes, rr, int_coefs)
     return nll
 end
 
@@ -34,12 +20,10 @@ aft{T<:Real}(S::AbstractVector{Event{T}},X::AbstractArray, pdist, degreetype; kw
 aft(EventWindow.(S),X::AbstractArray, pdist, degreetype; kwargs...)
 
 function aft(S::AbstractVector,X::AbstractArray, pdist, degreetype; kwargs...)
-    M = length(pdist.params)
-    N = size(X,2)
-    Xβ = zeros(size(X,1))
-    f1 = (ϕβ) -> aft_l(S, X, Xβ, ϕβ, pdist, M, N)
-    h1! = (ϕβ,grad,hes) -> aft_h!(grad, hes, S, X, Xβ, ϕβ, pdist, M, N, degreetype)
-    return newton_raphson(f1,h1!, initialize_aft(S, X, pdist, N); kwargs...)
+    rr = AftResp(S, X, pdist)
+    f1 = (ϕβ) -> aft_l(ϕβ, rr)
+    h1! = (ϕβ,grad,hes) -> aft_h!(grad, hes, ϕβ, rr, degreetype)
+    return newton_raphson(f1,h1!, initialize_aft(S, X, pdist, size(X,2)); kwargs...)
 end
 
 function aft(formula::Formula, data::DataFrame, pdist, degreetype = Val{50}(); kwargs...)

@@ -108,25 +108,38 @@ function Base.parse(T::Type{EventWindow},str::String)
 end
 
 ###############################################################
-######################DERIVATIVES AFT##########################
+######################AFTRESP##################################
 ###############################################################
-
-immutable Derivatives{R<:Number}
-    τs::Array{R,1}
-    cdfs::Array{R,1}
-    Δcdf::Array{R,0}
-    ps::Array{R,1}
-    gradlog::Array{R,1}
-    heslog::Array{R,2}
-    gradlogint::Array{Array{R,1},1}
-    heslogint::Array{Array{R,2},1}
+immutable AftResp{R<:Number, D<:Distribution}
+    W::Array{R,2}
+    X::Array{R,2}
+    Xβ::Array{R,1}
+    Θ::Array{R,1}
+    dist::D
+    M::Int64
+    N::Int64
+    I1::Array{Int64,1}
+    I2::Array{Int64,1}
+    τs::Array{R,2}
+    cdfs::Array{R,2}
+    Δcdf::Array{R,1}
+    loglik::Array{R,1}
 end
 
-Derivatives(M::Int64) = Derivatives(zeros(2), zeros(2), fill(0., ()), zeros(2),
-                                    zeros(M+1), zeros(M+1,M+1),
-                                    [zeros(M+1) for i in 1:2],
-                                    [zeros(M+1,M+1) for i in 1:2])
-
+function AftResp(S, X, dist)
+    M = length(dist.params)
+    N = size(X,2)
+    Xβ = zeros(size(X,1))
+    Θ = ones(size(X,1))
+    L = length(S)
+    W = [(k == 1 ? s.t₀ : s.t₁) for s in S, k in 1:2]
+    instants = [s.t₁ == s.t₀ for s in S]
+    I1 = find(instants)
+    I2 = find(!instants)
+   return AftResp(W, X, Xβ, Θ, dist, M, N, I1, I2,
+                   zeros(L,2), ones(L,2),
+                   zeros(L), zeros(L))
+end
 ###############################################################
 ######################INTCOEFS#################################
 ###############################################################

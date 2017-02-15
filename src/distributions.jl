@@ -8,7 +8,7 @@ end
 
 PGamma() = PGamma([1.])
 
-for op in [:pdf, :cdf, :quantile]
+for op in [:pdf, :logpdf, :cdf, :quantile]
     @eval ($op)(pdist::PGamma, t) = ($op)(Gamma(exp(pdist.params[1]),exp(-pdist.params[1])), t)
 end
 
@@ -23,7 +23,7 @@ function dl!(gl, pdist::PGamma, t, int_coefs)
     gl[2] *= (t-1)
 end
 
-function d²l!(hl, gl, pdist::PGamma, t, int_coefs)
+function d²l!(gl, hl, pdist::PGamma, t, int_coefs)
     hl[2,2] = gl[2] = exp(pdist.params[1])
     gl[1] = muladd(gl[2],(log(t)-t), int_coefs.aux[1])
     gl[2] *= (t-1)

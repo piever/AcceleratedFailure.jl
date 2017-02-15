@@ -9,18 +9,11 @@ function clenshaw_coefs{N}(pdist::Distribution, f::Function, degreetype::Val{N} 
     return u
 end
 
-#clenshaw_asin(x,c) = ApproxFun.clenshaw_fast(2*(asin(2x-1))/π, c)
+#clenshaw_asin(x,c) = ApproxFun.clenshaw(2*(asin(2x-1))/π, c)
 clenshaw_asin(x,c) = clenshaw_halved(4*(asin(2x-1))/π, c)
 @generated function clenshaw_halved{N, R<:Real}(x::R, c::Vec{N,R})
-    a,b = :(zero(R)),:(zero(R))
-    as = []
-    for k = N:-1:2
-        ak = Symbol("a",k)
-        push!(as, :($ak = $a))
-        a = :(muladd(x,$a,c[$k]-$b))
-        b = :($ak)
-    end
     Expr(:block,
-    as...,
-    :(muladd(x/2,$a,c[1]-$b)))
+    :((a,b) = (zero(R), zero(R))),
+    (:((a,b) = (muladd(x,a,c[$k]-b),a)) for k = N:-1:2)...,
+    :(muladd(x/2,a,c[1]-b)))
 end

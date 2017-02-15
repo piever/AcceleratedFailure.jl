@@ -15,3 +15,5 @@ true_res = [log(10), log(10), 1., -0.3, 0., 0.]
 @test_approx_eq_eps res.coefmat.cols[1] true_res 1e-1
 println("Aft works:")
 println("$(res.coefmat.cols[1])~$(true_res)")
+t = @time res = aft(a ~ 1 + x +y + x*y+ z, df, PGamma(); tol = 1e-3)
+println(t)

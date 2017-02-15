@@ -1,71 +1,77 @@
-function update_Xβ_dist!(X, Xβ, ϕβ, pdist, M, N)
-    ϕ = ϕβ[1:M]
-    β = ϕβ[M+1:end]
-    A_mul_B!(Xβ, X, β)
-    pdist.params[:] = ϕ
+function update_Xβ_dist!(rr, ϕβ)
+    ϕ = ϕβ[1:rr.M]
+    β = ϕβ[rr.M+1:end]
+    A_mul_B!(rr.Xβ, rr.X, β)
+    rr.Θ .= exp.(-rr.Xβ)
+    rr.dist.params[:] = ϕ
     return
 end
 
-function compute_loglik!(ders, s, pdist::Distribution, c)
-    if s.t₁ == s.t₀
-        ders.τs[1] = s.t₀*exp(-c)
-        return log(pdf(pdist, ders.τs[1]))-c
-    else
-        fin = s.t₁ < Inf
-        for k in 1:(fin ? 2 : 1)
-            ders.τs[k]    = ((k ==1) ? s.t₀ : s.t₁)*exp(-c)
-            ders.cdfs[k]  = cdf(pdist, ders.τs[k])
+function compute_loglik!(rr)
+    for i in rr.I1
+        rr.τs[i,1] = rr.W[i,1]*rr.Θ[i]
+        rr.loglik[i] = logpdf(rr.dist, rr.τs[i,1])-rr.Xβ[i]
+    end
+    for i in rr.I2
+        for k in 1:(rr.W[i,2] < Inf ? 2 : 1)
+            rr.τs[i, k]    = rr.W[i,k]*rr.Θ[i]
+            rr.cdfs[i, k]  = cdf(rr.dist, rr.τs[i,k])
         end
-        ders.Δcdf[1] = (fin ? ders.cdfs[2] : 1.) - ders.cdfs[1]
-        return log(ders.Δcdf[1])
+        rr.Δcdf[i] = rr.cdfs[i,2] - rr.cdfs[i,1]
+        rr.loglik[i] = log(rr.Δcdf[i])
+    end
+    return sum(rr.loglik)
+end
+
+function diff_ders!(gl, hl, gli, hli, fin, Δcdf)
+    @inbounds for j1 in eachindex(gl)
+        gl[j1] = (fin*gli[2][j1]  - gli[1][j1])/Δcdf
+    end
+    @inbounds for j2 in eachindex(gl), j1 in eachindex(gl)
+        hl[j1,j2] = (fin*hli[2][j1,j2]- hli[1][j1,j2])/Δcdf - gl[j1]*gl[j2]
     end
 end
 
-# Add other fields to ders object for in-place operations
-# Clean this bit
-function compute_ders!(ders, s, pdist::Distribution, c, int_coefs)
-    M = length(pdist.params)
-    if s.t₁ == s.t₀
-        d²l!(ders.heslog, ders.gradlog, pdist, ders.τs[1], int_coefs)
-    else
-        fin = s.t₁ < Inf
-        for k in 1:(fin ? 2 : 1)
-            ders.ps[k] = ders.τs[k]*pdf(pdist, ders.τs[k])
-            d²l_int!(ders.gradlogint[k], ders.heslogint[k], pdist,
-                     ders.τs[k], ders.cdfs[k], ders.ps[k], int_coefs)
+function subtract_ders!(grad, hes, rr, int_coefs)
+    grad[:] = 0.
+    hes[:,:] = 0.
+    gl, hl = zeros(rr.M+1), zeros(rr.M+1,rr.M+1)
+    gli, hli = [zeros(rr.M+1) for i in 1:2], [zeros(rr.M+1,rr.M+1) for i in 1:2]
+    for i in rr.I1
+        d²l!(gl, hl, rr.dist, rr.τs[i,1], int_coefs)
+        subtract_ders!(grad, hes, gl, hl, @view(rr.X[i,:]), rr.M, rr.N)
+    end
+    for i in rr.I2
+        fin = rr.W[i,2] < Inf
+        @inbounds for k in 1:(fin ? 2 : 1)
+            d²l_int!(gli[k], hli[k], rr.dist, rr.τs[i,k], rr.cdfs[i,k], int_coefs)
         end
-        for i in eachindex(ders.gradlog)
-            ders.gradlog[i] = ((fin ? ders.gradlogint[2][i] : 0) - ders.gradlogint[1][i])/
-                                ders.Δcdf[1]
-        end
-        for j in 1:M+1, i in 1:M+1
-            ders.heslog[i,j] = ((fin ? ders.heslogint[2][i,j] : 0)- ders.heslogint[1][i,j])/
-                                ders.Δcdf[1] - ders.gradlog[i]*ders.gradlog[j]
-        end
+        diff_ders!(gl, hl, gli, hli, fin, rr.Δcdf[i])
+        subtract_ders!(grad, hes, gl, hl, @view(rr.X[i,:]), rr.M, rr.N)
     end
 end
 
-function subtract_ders!(grad, hes, ders::Derivatives, x, M , N)
-    for i = 1:(M+N)
-        grad[i] -= ders.gradlog[min(i,M+1)]*x[max(i-M,1)]
+function subtract_ders!(grad, hes, gl, hl, x, M , N)
+    @inbounds for j1 = 1:(M+N)
+        grad[j1] -= gl[min(j1,M+1)]*x[max(j1-M,1)]
     end
-    for j = 1:(M+N), i = 1:(M+N)
-        hes[i,j] -= ders.heslog[min(i,M+1),min(j,M+1)]*x[max(i-M,1)]*x[max(j-M,1)]
+    @inbounds for j2 = 1:(M+N), j1 = 1:(M+N)
+        hes[j1,j2] -= hl[min(j1,M+1),min(j2,M+1)]*x[max(j1-M,1)]*x[max(j2-M,1)]
     end
 end
 
-function d²l_int!(gl, hl, pdist::Distribution, t, x, p, int_coefs)
-    for j1 = 1:length(pdist.params)
+function d²l_int!(gl, hl, pdist::Distribution, t, x, int_coefs)
+    @inbounds for j1 = 1:length(pdist.params)
         gl[j1] = clenshaw_asin(x,int_coefs.g[j1])
     end
-    gl[end] = -p
+    gl[end] = -t*pdf(pdist, t)
     last_line = @view hl[end, :]
     dl!(last_line, pdist, t, int_coefs)
-    scale!(last_line, -p)
-    for j2 in 1:length(pdist.params), j1 in j2:length(pdist.params)
+    scale!(last_line, gl[end])
+    @inbounds for j2 in 1:length(pdist.params), j1 in j2:length(pdist.params)
         hl[j1,j2] = clenshaw_asin(x,int_coefs.hggt[j1,j2])
     end
-    for j2 in 1:length(pdist.params)+1, j1 in 1:j2-1
+    @inbounds for j2 in 1:length(pdist.params)+1, j1 in 1:j2-1
         hl[j1,j2] = hl[j2,j1]
     end
 end
