@@ -13,10 +13,10 @@ function compute_loglik!(ders, s, pdist::Distribution, c)
     else
         fin = s.t₁ < Inf
         for k in 1:(fin ? 2 : 1)
-            ders.τs[k]                 = ((k ==1) ? s.t₀ : s.t₁)*exp(-c)
-            ders.cdfs[k]               = cdf(pdist, ders.τs[k])
+            ders.τs[k]    = ((k ==1) ? s.t₀ : s.t₁)*exp(-c)
+            ders.cdfs[k]  = cdf(pdist, ders.τs[k])
         end
-        ders.Δcdf[1]               = (fin ? ders.cdfs[2] : 1.) - ders.cdfs[1]
+        ders.Δcdf[1] = (fin ? ders.cdfs[2] : 1.) - ders.cdfs[1]
         return log(ders.Δcdf[1])
     end
 end
@@ -30,15 +30,17 @@ function compute_ders!(ders, s, pdist::Distribution, c, int_coefs)
     else
         fin = s.t₁ < Inf
         for k in 1:(fin ? 2 : 1)
-            ders.ps[k]                 = ders.τs[k]*pdf(pdist, ders.τs[k])
-            d²l_int!(ders.gradlogint[k], ders.heslogint[k], pdist, ders.τs[k], ders.cdfs[k], ders.ps[k], int_coefs)
+            ders.ps[k] = ders.τs[k]*pdf(pdist, ders.τs[k])
+            d²l_int!(ders.gradlogint[k], ders.heslogint[k], pdist,
+                     ders.τs[k], ders.cdfs[k], ders.ps[k], int_coefs)
         end
         for i in eachindex(ders.gradlog)
-            ders.gradlog[i] = ((fin ?  ders.gradlogint[2][i] : 0) - ders.gradlogint[1][i])/ders.Δcdf[1]
+            ders.gradlog[i] = ((fin ? ders.gradlogint[2][i] : 0) - ders.gradlogint[1][i])/
+                                ders.Δcdf[1]
         end
         for j in 1:M+1, i in 1:M+1
-            ders.heslog[i,j] = ((fin ? ders.heslogint[2][i,j] : 0) - ders.heslogint[1][i,j])/ders.Δcdf[1] -
-                                ders.gradlog[i]*ders.gradlog[j]
+            ders.heslog[i,j] = ((fin ? ders.heslogint[2][i,j] : 0)- ders.heslogint[1][i,j])/
+                                ders.Δcdf[1] - ders.gradlog[i]*ders.gradlog[j]
         end
     end
 end
@@ -71,4 +73,5 @@ end
 
 auxvec(pdist::Distribution) = Array{Float64,1}(0)
 
-initialize_aft(S::AbstractVector,X::AbstractArray, pdist::Distribution, N) = vcat(pdist.params,zeros(N))
+initialize_aft(S::AbstractVector,X::AbstractArray, pdist::Distribution, N) =
+vcat(pdist.params,zeros(N))

@@ -55,5 +55,6 @@ function aft(formula::Formula, data::DataFrame, pdist, degreetype = Val{50}(); k
     pdist.params[:] = ϕβ[1:length(pdist.params)]
     coefmat = CoefTable(hcat([ϕβ, se, z_score, pvalues]...),
     ["Estimate", "Std.Error", "z value", "Pr(>|z|)"], colnames, 4)
-    AftModel("Accelerated Failure Time, dist = $pdist;\n", formula, coefmat, M, -neg_ll, -grad, hes, pdist)
+    AftModel("Accelerated Failure Time, dist = $pdist;\n", formula,
+             coefmat, M, -neg_ll, -grad, hes, pdist)
 end

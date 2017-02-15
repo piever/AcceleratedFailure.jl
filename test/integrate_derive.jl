@@ -28,16 +28,12 @@ ders = Survival.Derivatives(1)
 int_coefs = Survival.IntCoefs(pdist)
 for s in [Survival.EventWindow(1.),Survival.EventWindow(0.7,Inf),Survival.EventWindow(0.7,1.2)]
     c = 1.
+    gradnum = Calculus.gradient(v->Survival.compute_loglik!(ders, s,Survival.PGamma([v[1]]), v[2]),[pdist.params[1],c])
+    hesnum = Calculus.hessian(v->Survival.compute_loglik!(ders, s, Survival.PGamma([v[1]]), v[2]),[pdist.params[1],c])
+    Survival.compute_loglik!(ders, s,pdist, c)
     Survival.compute_ders!(ders, s, pdist, c, int_coefs )
-    value = Survival.compute_loglik(s,pdist, c)
-    grad = Calculus.gradient(v->Survival.compute_loglik(s,Survival.PGamma([v[1]]), v[2]),[pdist.params[1],c])
-    hes = Calculus.hessian(v->Survival.compute_loglik(s,Survival.PGamma([v[1]]), v[2]),[pdist.params[1],c])
-    @test_approx_eq_eps ders.loglik value 1e-3
-    @test_approx_eq_eps ders.ds_dϕ[1] grad[1] 1e-3
-    @test_approx_eq_eps ders.ds_dc grad[2] 1e-3
-    @test_approx_eq_eps ders.d²s_dϕ²[1,1] hes[1,1] 1e-3
-    @test_approx_eq_eps ders.d²s_dcdϕ[1] hes[1,2] 1e-3
-    @test_approx_eq_eps ders.d²s_dc² hes[2,2] 1e-3
+    @test_approx_eq_eps ders.gradlog gradnum 1e-3
+    @test_approx_eq_eps ders.heslog hesnum 1e-3
 end
 println("Derivation works fine!")
 println("Derivatives are $ders")

@@ -12,7 +12,7 @@ using FixedSizeArrays
 include("aft_test.jl")
 
 # Check efficient integration, both accuracy and speed
-#include("integrate_derive.jl")
+include("integrate_derive.jl")
 
 
 #test cox
