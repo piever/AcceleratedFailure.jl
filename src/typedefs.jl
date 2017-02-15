@@ -114,16 +114,16 @@ end
 immutable Derivatives{R<:Number}
     τs::Array{R,1}
     cdfs::Array{R,1}
-    ps::Array{R,1}
     Δcdf::Array{R,0}
+    ps::Array{R,1}
     gradlog::Array{R,1}
     heslog::Array{R,2}
     gradlogint::Array{Array{R,1},1}
     heslogint::Array{Array{R,2},1}
 end
 
-Derivatives(M::Int64) = Derivatives(zeros(2), zeros(2), zeros(2),
-                                    fill(0., ()), zeros(M+1), zeros(M+1,M+1),
+Derivatives(M::Int64) = Derivatives(zeros(2), zeros(2), fill(0., ()), zeros(2),
+                                    zeros(M+1), zeros(M+1,M+1),
                                     [zeros(M+1) for i in 1:2],
                                     [zeros(M+1,M+1) for i in 1:2])
 

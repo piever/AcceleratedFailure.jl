@@ -2,7 +2,7 @@
 ######################GAMMA####################################
 ###############################################################
 
-type PGamma <: Distribution
+immutable PGamma <: Distribution
     params::Array{Float64}
 end
 

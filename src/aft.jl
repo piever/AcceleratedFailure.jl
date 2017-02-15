@@ -1,10 +1,5 @@
-function aft_l(S, X, ϕβ, pdist, M, N)
-    ϕ = ϕβ[1:M]
-    β = ϕβ[M+(1:N)]
-    Xβ = X*β
-    # Update pdist
-    pdist.params[:] = ϕ
-
+function aft_l(S, X, Xβ, ϕβ, pdist, M, N)
+    update_Xβ_dist!(X, Xβ, ϕβ, pdist,  M, N)
     ders = Derivatives(M)
     # compute likelihood
     nll = 0.
@@ -14,20 +9,17 @@ function aft_l(S, X, ϕβ, pdist, M, N)
     return nll
 end
 
-function aft_h!(grad, hes, S, X, ϕβ, pdist ,M, N, degreetype)
+function aft_h!(grad, hes, S, X, Xβ, ϕβ, pdist, M, N, degreetype)
+    update_Xβ_dist!(X, Xβ, ϕβ, pdist, M, N)
+    ders = Derivatives(M)
+    # Compute auxiliary vector for derivatives.
+    int_coefs = IntCoefs(pdist, degreetype)
 
-    ϕ = ϕβ[1:M]
-    β = ϕβ[M+(1:N)]
-    Xβ = X*β
+    # Compute likelihoog, grad and hes
+
     nll = 0.
     grad[:] = 0.
     hes[:,:] = 0.
-    ders = Derivatives(M)
-
-    # Update pdist
-    pdist.params[:] = ϕ
-    # Compute auxiliary vector for derivatives.
-    int_coefs = IntCoefs(pdist, degreetype)
 
     for (i,s) in enumerate(S)
         x = @view X[i,:]
@@ -44,8 +36,9 @@ aft(EventWindow.(S),X::AbstractArray, pdist, degreetype; kwargs...)
 function aft(S::AbstractVector,X::AbstractArray, pdist, degreetype; kwargs...)
     M = length(pdist.params)
     N = size(X,2)
-    f1 = (ϕβ) -> aft_l(S, X, ϕβ, pdist, M, N)
-    h1! = (ϕβ,grad,hes) -> aft_h!(grad, hes, S, X, ϕβ, pdist, M, N, degreetype)
+    Xβ = zeros(size(X,1))
+    f1 = (ϕβ) -> aft_l(S, X, Xβ, ϕβ, pdist, M, N)
+    h1! = (ϕβ,grad,hes) -> aft_h!(grad, hes, S, X, Xβ, ϕβ, pdist, M, N, degreetype)
     return newton_raphson(f1,h1!, initialize_aft(S, X, pdist, N); kwargs...)
 end
 
@@ -59,7 +52,7 @@ function aft(formula::Formula, data::DataFrame, pdist, degreetype = Val{50}(); k
     se = sqrt.(diag(pinv(hes)))
     z_score = ϕβ./se
     pvalues = 2*cdf(Normal(),-abs.(z_score))
-    pdist.params = ϕβ[1:length(pdist.params)]
+    pdist.params[:] = ϕβ[1:length(pdist.params)]
     coefmat = CoefTable(hcat([ϕβ, se, z_score, pvalues]...),
     ["Estimate", "Std.Error", "z value", "Pr(>|z|)"], colnames, 4)
     AftModel("Accelerated Failure Time, dist = $pdist;\n", formula, coefmat, M, -neg_ll, -grad, hes, pdist)

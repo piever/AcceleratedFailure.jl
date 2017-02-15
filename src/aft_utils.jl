@@ -1,3 +1,11 @@
+function update_Xβ_dist!(X, Xβ, ϕβ, pdist, M, N)
+    ϕ = ϕβ[1:M]
+    β = ϕβ[M+1:end]
+    A_mul_B!(Xβ, X, β)
+    pdist.params[:] = ϕ
+    return
+end
+
 function compute_loglik!(ders, s, pdist::Distribution, c)
     if s.t₁ == s.t₀
         ders.τs[1] = s.t₀*exp(-c)
