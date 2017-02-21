@@ -103,11 +103,11 @@ function coxph(formula::Formula, data::DataFrame; l2_cost = 0., kwargs...)
     model_matrix = DataFrames.ModelMatrix(M)
     X = model_matrix.m[:,2:size(model_matrix.m,2)]
     β, neg_ll,grad, hes =  coxph(S, X; l2_cost = l2_cost, kwargs...)
-    colnames = coefnames(M)[2:end]
+    rownms = coefnames(M)[2:end]
     se = sqrt.(diag(pinv(hes)))
     z_score = β./se
     pvalues = 2*cdf(Normal(),-abs.(z_score))
     coefmat = CoefTable(hcat([β, se, z_score, pvalues]...),
-    ["Estimate", "Std.Error", "z value", "Pr(>|z|)"], colnames, 4)
+    ["Estimate", "Std.Error", "z value", "Pr(>|z|)"], rownms, 4)
     CoxModel("Cox; ", formula, coefmat, M, -neg_ll, -grad, hes)
 end

@@ -108,6 +108,22 @@ function Base.parse(T::Type{EventWindow},str::String)
 end
 
 ###############################################################
+######################PRERPROCESSING###########################
+###############################################################
+
+immutable SortedEvents{R<:Real}
+    events::Vector{Event{R}}
+    fs::Vector{Int64}
+    ls::Vector{Int64}
+end
+
+function SortedEvents(events)
+    sorted = issorted(events) ? copy(events) : sort(events)
+    return SortedEvents(sorted, find(firsts(sorted)), find(lasts(sorted)))
+end
+
+
+###############################################################
 ######################AFTRESP##################################
 ###############################################################
 immutable AftResp{R<:Number, D<:Distribution}

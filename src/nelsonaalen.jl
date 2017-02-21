@@ -1,20 +1,14 @@
-function nelson_aalen(events::Array, fs, ls, Θ = ones(length(events)))
+function nelson_aalen(sort_ev::SortedEvents, Θ = ones(length(sort_ev.events)))
+    fs, ls, events = sort_ev.fs, sort_ev.ls, sort_ev.events
     ds = ls-fs+1
     ns = after(Θ)[fs]
     chaz = cumsum(ds./ns)
-    return getfield.(events[fs],[:time]), chaz
+    v = cumsum(ds./ns.^2)
+    return [event.time for event in events[fs]], chaz, v
 end
 
-function nelson_aalen(events::Array, Θ = ones(length(events)))
-    if issorted(events)
-        return nelson_aalen(events, find(firsts(events)), find(lasts(events)),Θ)
-    else
-        p = sortperm(events)
-        sorted_events = events[p]
-        sorted_Θ = Θ[p]
-        return nelson_aalen(sorted_events, find(firsts(sorted_events)), find(lasts(sorted_events)), sorted_Θ)
-    end
-end
+nelson_aalen(events::Array, Θ = ones(length(events))) =
+nelson_aalen(SortedEvents(events), Θ)
 
 if isdefined(:NullableArray)
     nelson_aalen(events::NullableArray, args...) = nelson_aalen(events.values[!events.isnull], args...)
@@ -26,7 +20,11 @@ function nelson_aalen(res::CoxModel)
     exp.(((DataFrames.ModelMatrix(res.M).m)[:,2:end])*(res.coefmat.cols[1])))
 end
 
-chaz2cdf(x,y) = (x,1. -exp.(-y))
+function survival(res::CoxModel)
+    x_chaz,y_chaz,v_chaz = nelson_aalen(res::CoxModel)
+    x, y, v = x_chaz, exp.(-y_chaz), exp.(-2y_chaz) .* v_chaz
+    return x, y, v
+end
 
 chaz2haz(x,y) = (x, diff(vcat(0.,y)))
 

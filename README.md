@@ -48,18 +48,18 @@ paro  -0.0850866  0.195743 -0.434686   0.6638
 prio   0.0907363 0.0286157   3.17086   0.0015
 ```
 
-This package also includes Kaplan Meier estimator of the cumulative function, which takes a vector of events as input:
+This package also includes Kaplan Meier estimator of the survival function, which takes a vector of events as input:
 
 ```julia
-x,cumulative = kaplan_meier(rossi[:event])
+x,surv = kaplan_meier(rossi[:event])
 ```
-In the output `x` will be the array with the times of death, `cumulative` the estimated cdf.
+In the output `x` will be the array with the times of death, `surv` the estimated cdf.
 
 To visualize it (using Plots.jl) you can simply type:
 
 ```julia
 using Plots
-plot(x,cumulative, line = :step)
+plot(x,surv, line = :step)
 ```
 
 Nelson Aalen estimator for the cumulative hazard:
@@ -71,8 +71,8 @@ x, chaz = nelson_aalen(rossi[:event])
 To check that everything went well, you may want to verify that `cumulative = 1 - exp.(-chaz)`
 
 ```julia
-plot(x,cumulative, line = :step)
-plot!(x,1-exp.(-chaz), line = :step)
+plot(x,surv, line = :step)
+plot!(x,exp.(-chaz), line = :step)
 ```
 
 You can also get the baseline cumulative hazard from the outcome of a Cox regression:

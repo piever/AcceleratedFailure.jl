@@ -12,7 +12,7 @@ filepath = joinpath(Pkg.dir("Survival", "examples"), "rossi.csv")
 rossi = CSV.read(filepath; nullable = false)
 rossi[:event] = Event.(rossi[:week],rossi[:arrest] .== 0)
 
-# kaplan_meier and nelson_aalen method to estimate cdf and cumulative hazard respectively
+# kaplan_meier and nelson_aalen method to estimate survival and cumulative hazard respectively
 plot(kaplan_meier(rossi[:event])..., line = :step)
 
 plot(nelson_aalen(rossi[:event])..., line = :step)
