@@ -117,9 +117,9 @@ immutable SortedEvents{R<:Real}
     ls::Vector{Int64}
 end
 
-function SortedEvents(events)
-    sorted = issorted(events) ? copy(events) : sort(events)
-    return SortedEvents(sorted, find(firsts(sorted)), find(lasts(sorted)))
+function SortedEvents(events, sorted = false)
+    sort_ev = sorted ? events : sort(events)
+    return SortedEvents(sort_ev, find(firsts(sort_ev)), find(lasts(sort_ev)))
 end
 
 
