@@ -12,5 +12,3 @@ include("aft_test.jl")
 
 #test cox
 include("cox_rossi.jl")
-@test_approx_eq_eps hcat(outcome.coefmat.cols[1:3]...) vcat(expected_coefmat.cols[1:3]...) 1e-6
-println("Cox regression is fine")
