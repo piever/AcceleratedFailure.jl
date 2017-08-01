@@ -2,14 +2,13 @@
 
 using Survival
 using DataFrames
-using CSV
 using BenchmarkTools
 using Plots
 gr()
 
 # Load DataFrame and create "event" column
 filepath = joinpath(Pkg.dir("Survival", "examples"), "rossi.csv")
-rossi = CSV.read(filepath; nullable = false)
+rossi = readtable(filepath)
 rossi[:event] = Event.(rossi[:week],rossi[:arrest] .== 0)
 
 # kaplan_meier and nelson_aalen method to estimate survival and cumulative hazard respectively
@@ -18,11 +17,11 @@ plot(kaplan_meier(rossi[:event])..., line = :step)
 plot(nelson_aalen(rossi[:event])..., line = :step)
 
 # Run Cox regression
-outcome = coxph(event ~ fin+age+race+wexp+mar+paro+prio,rossi)
+outcome = coxph(@formula(event ~ fin+age+race+wexp+mar+paro+prio),rossi)
 
 # Test efficiency of the implementation:
 using BenchmarkTools
-@benchmark outcome = coxph(event ~ fin+age+race+wexp+mar+paro+prio,rossi)
+@benchmark outcome = coxph(@formula(event ~ fin+age+race+wexp+mar+paro+prio),rossi)
 
 # The outcome of the regression is stored in outcome.coefmat
 outcome.coefmat

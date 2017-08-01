@@ -1,5 +1,5 @@
 filepath = joinpath(Pkg.dir("Survival", "examples"), "rossi.csv")
-rossi = CSV.read(filepath; nullable = false)
+rossi = readtable(filepath)
 rossi[:event] = Event.(rossi[:week],rossi[:arrest] .== 0)
 
 outcome = coxph( @formula(event ~ fin+age+race+wexp+mar+paro+prio) ,rossi ; tol = 1e-8)

@@ -19,20 +19,19 @@ Load relevant packages:
 ```julia
 using Survival
 using DataFrames
-using CSV
 ```
 
 Load dataset and create event column. Event.time is time, whereas Event.censored is true if the data is censored and false otherwise.
 
 ```julia
 filepath = joinpath(Pkg.dir("Survival", "examples"), "rossi.csv")
-rossi = CSV.read(filepath; nullable = false)
+rossi = readtable(filepath)
 rossi[:event] = Event.(rossi[:week], rossi[:arrest].== 0)
 ```
 
 Run Cox regression
 ```julia
-outcome = coxph(event ~ fin+age+race+wexp+mar+paro+prio,rossi)
+outcome = coxph(@formula(event ~ fin+age+race+wexp+mar+paro+prio),rossi)
 ```
 And you should get this outcome (computed with Efron method for ties):
 ```
@@ -122,7 +121,7 @@ df = DataFrame(x = x, y = y, z = z, a = W)
 Let's specify the formula and distribution (only `PGamma` is implemented so far, where `PGamma(params) = Gamma(exp(params[1]),exp(-params[1]))`):
 
 ```julia
-res = aft(a ~ 1 + x +y + x*y+ z, df, PGamma(); tol = 1e-3)
+res = aft(@formula(a ~ 1 + x +y + x*y+ z), df, PGamma(); tol = 1e-3)
 ```
 
 The outcome should look something like this:
