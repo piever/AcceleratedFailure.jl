@@ -5,13 +5,13 @@ function clenshaw_coefs{N}(pdist::Distribution, f::Function, degreetype::Val{N} 
     g1 = cumsum(f1)
     len = min(length(g1.coefficients),N)
     (len < length(g1.coefficients)) && warn("I'm truncating the coefficients!")
-    u =  Vec{N, Float64}(vcat(g1.coefficients[1:len],zeros(N-len)))
+    u =  SVector{N, Float64}(vcat(g1.coefficients[1:len],zeros(N-len)))
     return u
 end
 
 #clenshaw_asin(x,c) = ApproxFun.clenshaw(2*(asin(2x-1))/π, c)
 clenshaw_asin(x,c) = clenshaw_halved(4*(asin(2x-1))/π, c)
-@generated function clenshaw_halved{N, R<:Real}(x::R, c::Vec{N,R})
+@generated function clenshaw_halved{N, R<:Real}(x::R, c::SVector{N})
     Expr(:block,
     :((a,b) = (zero(R), zero(R))),
     (:((a,b) = (muladd(x,a,c[$k]-b),a)) for k = N:-1:2)...,

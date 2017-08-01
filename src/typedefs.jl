@@ -2,7 +2,7 @@
 ######################SURVIVAL MODEL###########################
 ###############################################################
 
-abstract SurvivalModel
+abstract type SurvivalModel end
 
 function show(io::IO, obj::SurvivalModel)
     print(io,"\nModel: ", obj.model, obj.formula,"\n\n")
@@ -151,7 +151,7 @@ function AftResp(S, X, dist)
     W = [(k == 1 ? s.t₀ : s.t₁) for s in S, k in 1:2]
     instants = [s.t₁ == s.t₀ for s in S]
     I1 = find(instants)
-    I2 = find(!instants)
+    I2 = find(.!(instants))
    return AftResp(W, X, Xβ, Θ, dist, M, N, I1, I2,
                    zeros(L,2), ones(L,2),
                    zeros(L), zeros(L))
@@ -162,14 +162,14 @@ end
 
 immutable IntCoefs{R<:Number, N}
     aux::Array{R,1}
-    g::Array{Vec{N,R},1}
-    hggt::Array{Vec{N,R},2}
+    g::Array{SVector{N,R},1}
+    hggt::Array{SVector{N,R},2}
 end
 
 function IntCoefs{N}(pdist::Distribution, degreetype::Val{N} = Val{50}())
     aux = auxvec(pdist)
-    int_coefs = IntCoefs(aux,[Vec{N, Float64}(zeros(N)) for i in eachindex(pdist.params)],
-    [Vec{N, Float64}(zeros(N)) for i in eachindex(pdist.params), j in eachindex(pdist.params)])
+    int_coefs = IntCoefs(aux,[SVector{N, Float64}(zeros(N)) for i in eachindex(pdist.params)],
+    [SVector{N, Float64}(zeros(N)) for i in eachindex(pdist.params), j in eachindex(pdist.params)])
     for i in eachindex(pdist.params)
         int_coefs.g[i] = clenshaw_coefs(pdist, t -> ds(pdist,t, int_coefs, i), degreetype)
     end

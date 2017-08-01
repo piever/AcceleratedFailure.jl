@@ -2,14 +2,14 @@
 ######################GAMMA####################################
 ###############################################################
 
-immutable PGamma <: Distribution
+immutable PGamma <: ContinuousUnivariateDistribution
     params::Array{Float64}
 end
 
 PGamma() = PGamma([1.])
 
 for op in [:pdf, :logpdf, :cdf, :quantile]
-    @eval ($op)(pdist::PGamma, t) = ($op)(Gamma(exp(pdist.params[1]),exp(-pdist.params[1])), t)
+    @eval ($op)(pdist::PGamma, t::Real) = ($op)(Gamma(exp(pdist.params[1]),exp(-pdist.params[1])), t)
 end
 
 rand(pdist::PGamma) = rand(Gamma(exp(pdist.params[1]),exp(-pdist.params[1])))
@@ -38,7 +38,7 @@ auxvec(pdist::PGamma) = [exp(pdist.params[1])*(-polygamma(0,exp(pdist.params[1])
 
 function initialize_aft(S::AbstractVector,X::AbstractArray, pdist::PGamma, N)
     St = [(s.t₀+s.t₁)/2 for s in S]
-    valid = isfinite(St)
+    valid = isfinite.(St)
     res = glm(X[valid,:], St[valid], Gamma(), LogLink())
     T = 1/GLM.dispersion(res, true)
     return vcat(log(T),coef(res))

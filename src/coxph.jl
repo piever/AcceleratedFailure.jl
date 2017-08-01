@@ -12,7 +12,7 @@ function cox_f(S, fs, ls, ξ , X, β, λ, alive, afterΘ) # preprocessed already
             y -= Xβ[j] -log(ϕ)
         end
     end
-    y += λ*dot(β',β)
+    y += λ*(β' * β)
     return y
 end
 
@@ -60,7 +60,7 @@ function cox_h!(grad,hes, S, fs, ls, ξ , X, β, λ, alive, afterΘ, afterXΘ, a
             end
         end
     end
-    y += λ*dot(β',β)
+    y += λ*(β' * β)
 
     for k1 in 1:size(Ξ,1)
         grad[k1] +=  2*λ*β[k1]

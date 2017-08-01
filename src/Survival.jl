@@ -6,7 +6,7 @@ using Distributions
 import Base.show
 using StatsBase: StatisticalModel, RegressionModel
 using ApproxFun
-using FixedSizeArrays
+using StaticArrays
 import Distributions.pdf, Distributions.logpdf, Distributions.cdf,
        Distributions.quantile, Distributions.rand
 import GLM.coef, GLM.predict

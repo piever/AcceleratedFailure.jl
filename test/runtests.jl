@@ -6,7 +6,6 @@ using DataFrames
 using CSV
 using JLD
 using BenchmarkTools
-using FixedSizeArrays
 
 # Check aft
 include("aft_test.jl")
