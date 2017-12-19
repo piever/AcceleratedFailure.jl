@@ -1,15 +1,19 @@
-# Survival
+# AcceleratedFailure
 
-[![Build Status](https://travis-ci.org/piever/Survival.jl.svg?branch=master)](https://travis-ci.org/piever/Survival.jl)
+[![Build Status](https://travis-ci.org/piever/AcceleratedFailure.jl.svg?branch=master)](https://travis-ci.org/piever/Survival.jl)
 
-[![Coverage Status](https://coveralls.io/repos/piever/Survival.jl/badge.svg?branch=master&service=github)](https://coveralls.io/github/piever/Survival.jl?branch=master)
+[![Coverage Status](https://coveralls.io/repos/piever/Survival.jl/badge.svg?branch=master&service=github)](https://coveralls.io/github/piever/AcceleratedFailure.jl?branch=master)
 
-[![codecov.io](http://codecov.io/github/piever/Survival.jl/coverage.svg?branch=master)](http://codecov.io/github/piever/Survival.jl?branch=master)
+[![codecov.io](http://codecov.io/github/piever/Survival.jl/coverage.svg?branch=master)](http://codecov.io/github/piever/AcceleratedFailure.jl?branch=master)
+
+## Important notice
+
+I am porting the functionality of this repository into [Survival](https://github.com/ararslan/Survival.jl). This package should still be usable (under the name AcceleratedFailure, to avoid name conflicts): I will officially deprecate it when all the functionality has been ported.
 
 ## Setting up
 To install the package, simply run
 ```julia
-Pkg.clone("https://github.com/piever/Survival.jl.git")
+Pkg.clone("https://github.com/piever/AcceleratedFailure.jl.git")
 ```
 in the Julia REPL.
 
@@ -17,14 +21,14 @@ in the Julia REPL.
 Load relevant packages:
 
 ```julia
-using Survival
+using AcceleratedFailure
 using DataFrames
 ```
 
 Load dataset and create event column. Event.time is time, whereas Event.censored is true if the data is censored and false otherwise.
 
 ```julia
-filepath = joinpath(Pkg.dir("Survival", "examples"), "rossi.csv")
+filepath = joinpath(Pkg.dir("AcceleratedFailure", "examples"), "rossi.csv")
 rossi = readtable(filepath)
 rossi[:event] = Event.(rossi[:week], rossi[:arrest].== 0)
 ```
@@ -102,7 +106,7 @@ This package also supports [accelerated failure time models](https://en.wikipedi
 ```julia
 using Distributions
 using DataFrames
-using Survival
+using AcceleratedFailure
 ```
 
 Let's generate a fake dataset:
@@ -127,7 +131,7 @@ res = aft(@formula(a ~ 1 + x +y + x*y+ z), df, PGamma(); tol = 1e-3)
 The outcome should look something like this:
 
 ```
-Model: Accelerated Failure Time, dist = Survival.PGamma(params=[2.30856]);
+Model: Accelerated Failure Time, dist = AcceleratedFailure.PGamma(params=[2.30856]);
 Formula: a ~ 1 + x + y + x * y + z
 
                  Estimate  Std.Error   z value Pr(>|z|)
